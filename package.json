@@ -1,0 +1,30 @@
+{
+  "name": "license-validator",
+  "version": "1.0.0",
+  "description": "Validates open source licenses for your project.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CollinearGroup/license-validator.git"
+  },
+  "keywords": [
+    "license",
+    "validator",
+    "checker",
+    "cli"
+  ],
+  "author": "Dan Villa",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CollinearGroup/license-validator/issues"
+  },
+  "homepage": "https://github.com/CollinearGroup/license-validator#readme",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "inquirer": "^6.2.0",
+    "license-checker": "^24.0.1"
+  }
+}
