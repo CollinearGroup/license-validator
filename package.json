@@ -25,6 +25,7 @@
   "dependencies": {
     "commander": "^2.19.0",
     "inquirer": "^6.2.0",
+    "js-yaml": "^3.12.0",
     "license-checker": "^24.0.1"
   }
 }

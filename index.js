@@ -28,8 +28,17 @@ program
       console.log(await summary())
       return
     }
+
+    // if (args.json) {
+    //   console.log(await get())
+    //   return
+    // }
     
-    console.log(await validate())
+    const isValid = await validate()
+    if (!isValid) {
+      console.error('Not all licenses are approved!');
+      process.exit(1)
+    }
   })
 
 program.parse(process.argv);
