@@ -10,7 +10,7 @@ const fs = require('fs')
 
 let {
   init,
-  asSummary
+  asSummary,
 } = require('license-checker')
 init = promisify(init)
 
@@ -65,17 +65,42 @@ module.exports.summary = async () => {
 module.exports.validate = async (args) => {
   // Really only needs to run getLicenses and cross check it against a config file.
   const licenses = await this.getLicenses()
-  const invalidModules = []
+  const invalidModules = {}
   for (key in licenses) {
     if (!validationConfig.licenses.includes(licenses[key].licenses)) {
-      invalidModules.push(licenses[key])
+      invalidModules[key] = licenses[key]
     }
   }
-  if (invalidModules.length > 0) {
-    console.log(stringify(invalidModules, null, ' '))
+  if (Object.keys(invalidModules).length === 0) {
+    return false
   }
-  return false
+  const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
+  const treeShtuff = await this.getDepTree()
+  const pruneShtuff = this.pruneTreeByLicenses(treeShtuff, invalidModuleLicenses)
+  console.log(stringify(pruneShtuff, null, ' '))
 }
+
+// Seems to work but, currently missing the licenses field!
+module.exports.pruneTreeByLicenses = (node, licenses) => {
+  let prunedNode
+  if (node.dependencies) {
+    const prunedDeps = {}
+    Object.values(node.dependencies).forEach(dep => {
+      const node = this.pruneTreeByLicenses(dep, licenses)
+      if (node) {
+        prunedDeps[node.from] = { ...node }
+      }
+    })
+    prunedNode = { ...node, dependencies: prunedDeps}
+  }
+  if (prunedNode) {
+    return prunedNode
+  }
+  if (licenses.includes(node.licenses)) {
+    return node
+  }
+}
+
 
 // Will look through a dep list and license list and assign license info to each module
 module.exports.assignLicenses = () => {
