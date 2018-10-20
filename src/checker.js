@@ -5,36 +5,51 @@ const {
   parse,
 } = JSON
 
-const checker = {
-  init: promisify(require('license-checker').init)
-}
+let {
+  init,
+  asSummary
+} = require('license-checker')
+init = promisify(init)
+
 const exec = promisify(require('child_process').exec)
 
 // Builds the dependency tree of node modules.
 module.exports.getDepTree = async () => {
+  // TODO: Prefer a programmatic way to do this, but performance matters.
   const {
-    stdout: deps,
+    stdout,
     stderr
   } = await exec('npm list --json');
-  return parse(deps)
+  //TODO: Return nicer error.
+  return parse(stdout)
+}
+
+module.exports.getLicenses = async () => {
+  const opts = {
+    start: './',
+    production: true,
+  }
+  return await init(opts)
 }
 
 // Shows all the licenses in use for each module.
-module.exports.getLicenses = async () => {
-  const licenseInfo = await checker.init({
+module.exports.summary = async () => {
+  const opts = {
     start: './',
-    production: true
-  })
-  return licenseInfo
+    production: true,
+    summary: true,
+  }
+  return asSummary(await init(opts))
 }
 
 // Main method that intiates the checking process
-module.exports.check = async () => {
+module.exports.validate = async (args) => {
   const getLicensesPromise = this.getLicenses()
   const getDepTreePromise = this.getDepTree()
 
   const [deps, licenseInfo] = [await getDepTreePromise, await getLicensesPromise]
 
+  throw new Error('Not implemented yet.')
   // return this.assignLicenses(deps, licenseInfo)
 }
 
