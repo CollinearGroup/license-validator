@@ -3,23 +3,19 @@
 const program = require('commander');
 const pkg = require('./package')
 const {
+  loadConfig,
   getDepTree,
   summary,
   validate,
 } = require('./src/checker')
+
+loadConfig()
 
 program
   .version(pkg.version, '-v, --version')
   .option('--json', 'Prints a json report')
   .option('--summary', 'Prints a summary report')
   .option('-i, --interactive', 'Runs in interactive mode.')
-
-// program
-//   .command('check')
-//   .action(async (args) => {
-//     const result = await check(args)
-//     console.log(result);
-//   })
 
 // Default Action
 program

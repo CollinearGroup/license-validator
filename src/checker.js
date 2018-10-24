@@ -11,16 +11,30 @@ const fs = require('fs')
 let {
   init,
   asSummary,
+  asTree,
 } = require('license-checker')
 init = promisify(init)
 
 const exec = promisify(require('child_process').exec)
+const readFile = promisify(fs.readFile)
 const {
   safeLoad
 } = require('js-yaml')
 
 const CFG_LOC = './.approved-licenses.yml'
-const validationConfig = safeLoad(fs.readFileSync(CFG_LOC))
+let validationConfig
+
+module.exports.loadConfig = async () => {
+  try {
+    validationConfig = safeLoad(await readFile(CFG_LOC))
+  } catch (error) {
+    // TODO: make this better
+    process.emitWarning('Unable to load a configuration')
+    validationConfig = {
+      licenses: []
+    }
+  }
+}
 
 // Builds the dependency tree of node modules.
 module.exports.getDepTree = async () => {
@@ -65,38 +79,55 @@ module.exports.summary = async () => {
 module.exports.validate = async (args) => {
   // Really only needs to run getLicenses and cross check it against a config file.
   const licenses = await this.getLicenses()
+  const invalidLicensedModules = this.getInvalidModules(licenses, validationConfig)
+  if (invalidLicensedModules === undefined) {
+    return true
+  }
+  // const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
+  const packageDepTree = await this.getDepTree()
+  const invalidLicencedModuleTree = this.pruneTreeByLicenses(packageDepTree, invalidLicensedModules)
+  //TODO: This will just print a single top level for now.
+  console.log(asTree(invalidLicencedModuleTree))
+}
+
+// Compares a modules map with configured valid licenses.
+module.exports.getInvalidModules = (licenses, config) => {
   const invalidModules = {}
+  let zeroFound = true
   for (key in licenses) {
-    if (!validationConfig.licenses.includes(licenses[key].licenses)) {
+    if (!config.licenses.includes(licenses[key].licenses)) {
       invalidModules[key] = licenses[key]
+      zeroFound = false
     }
   }
-  if (Object.keys(invalidModules).length === 0) {
-    return false
+  if (zeroFound) {
+    return
   }
-  const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
-  const treeShtuff = await this.getDepTree()
-  const pruneShtuff = this.pruneTreeByLicenses(treeShtuff, invalidModuleLicenses)
-  console.log(stringify(pruneShtuff, null, ' '))
+  return invalidModules
 }
 
 // Seems to work but, currently missing the licenses field!
-module.exports.pruneTreeByLicenses = (node, licenses) => {
+module.exports.pruneTreeByLicenses = (node, invalidLicensedModules) => {
+  console.log(node, invalidLicensedModules);
   let prunedNode
   if (node.dependencies) {
     const prunedDeps = {}
     Object.values(node.dependencies).forEach(dep => {
-      const node = this.pruneTreeByLicenses(dep, licenses)
+      const node = this.pruneTreeByLicenses(dep, invalidLicensedModules)
       if (node) {
-        prunedDeps[node.from] = { ...node }
+        prunedDeps[node.from] = { ...node
+        }
       }
     })
-    prunedNode = { ...node, dependencies: prunedDeps}
+    prunedNode = { ...node,
+      dependencies: prunedDeps
+    }
   }
   if (prunedNode) {
     return prunedNode
   }
-  if (licenses.includes(node.licenses)) {
+  let moduleId = `${node.from}@${node.version}`
+  if (invalidLicensedModules[moduleId] !== undefined) {
     return node
   }
 }
@@ -109,5 +140,5 @@ module.exports.assignLicenses = () => {
 
 // Flags a license as bad?
 // module.exports.validateLicense = () => {
-  // throw new Error('Not implemented yet.')
+// throw new Error('Not implemented yet.')
 // }

@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "license-checker": "index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CollinearGroup/license-validator.git"
@@ -27,5 +30,9 @@
     "inquirer": "^6.2.0",
     "js-yaml": "^3.12.0",
     "license-checker": "^24.0.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^5.2.0"
   }
 }
