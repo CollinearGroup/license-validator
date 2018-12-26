@@ -1,6 +1,9 @@
+const _ = require('lodash')
+
 const {
   promisify,
 } = require('util')
+
 const {
   parse,
   stringify
@@ -57,14 +60,6 @@ module.exports.getLicenses = async () => {
   return await init(opts)
 }
 
-// Gets the licenses and returns them in dep tree format.
-// module.exports.getLicencesAsTree = () => {
-//   const getLicensesPromise = this.getLicenses()
-//   const getDepTreePromise = this.getDepTree()
-//   const [deps, licenseInfo] = [await getDepTreePromise, await getLicensesPromise]
-// }
-
-
 // Shows all the licenses in use for each module.
 module.exports.summary = async () => {
   const opts = {
@@ -85,7 +80,7 @@ module.exports.validate = async (args) => {
   }
   // const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
   const packageDepTree = await this.getDepTree()
-  const invalidLicensedModuleTree = this.pruneTreeByLicenses(packageDepTree, invalidLicensedModules)
+  const invalidLicensedModuleTree = this.pruneTreeByLicenses(packageDepTree.name, packageDepTree, invalidLicensedModules)
   //TODO: This will just print a single top level for now.
   console.log(asTree(invalidLicensedModuleTree))
 }
@@ -109,25 +104,31 @@ module.exports.getInvalidModules = (licenses, config) => {
 // Seems to work but, currently missing the licenses field!
 // Should prune out all the 'valid' licensed modules so that the result is
 // the tree of modules whose sub-dep licenses are invalid.
-module.exports.pruneTreeByLicenses = (node, invalidLicensedModules) => {
+module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
   let prunedNode
   if (node.dependencies) {
     const prunedDeps = {}
-    Object.values(node.dependencies).forEach(dep => {
-      const node = this.pruneTreeByLicenses(dep, invalidLicensedModules)
-      if (node) {
-        prunedDeps[node.from] = { ...node
-        }
+    for (const key in node.dependencies) {
+      // dependency is an object
+      const dependency = node.dependencies[key]
+      const prunedSubTreeNode = this.pruneTreeByLicenses(key, dependency, invalidLicensedModules)
+      if (prunedSubTreeNode) {
+        prunedDeps[key] = { ...prunedSubTreeNode }
       }
-    })
+    }
+
+    if (_.isEmpty(prunedDeps)) {
+      return undefined
+    }
+
     prunedNode = { ...node,
       dependencies: prunedDeps
     }
-  }
-  if (prunedNode) {
+
     return prunedNode
   }
-  let moduleId = `${node.from}@${node.version}`
+
+  const moduleId = `${name}@${node.version}`
   if (invalidLicensedModules[moduleId] !== undefined) {
     return { ...node, licenses: invalidLicensedModules[moduleId].licenses }
   }
