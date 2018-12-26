@@ -19,6 +19,7 @@ program
 
 // Default Action
 program
+  // TODO: Move to testable function
   .action(async (args) => {
     if (args.summary) {
       console.log(await summary())

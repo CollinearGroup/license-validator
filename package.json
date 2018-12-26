@@ -4,7 +4,7 @@
   "description": "Validates open source licenses for your project.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --recursive"
   },
   "bin": {
     "license-checker": "index.js"

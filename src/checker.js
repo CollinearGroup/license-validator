@@ -85,9 +85,9 @@ module.exports.validate = async (args) => {
   }
   // const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
   const packageDepTree = await this.getDepTree()
-  const invalidLicencedModuleTree = this.pruneTreeByLicenses(packageDepTree, invalidLicensedModules)
+  const invalidLicensedModuleTree = this.pruneTreeByLicenses(packageDepTree, invalidLicensedModules)
   //TODO: This will just print a single top level for now.
-  console.log(asTree(invalidLicencedModuleTree))
+  console.log(asTree(invalidLicensedModuleTree))
 }
 
 // Compares a modules map with configured valid licenses.
@@ -107,8 +107,9 @@ module.exports.getInvalidModules = (licenses, config) => {
 }
 
 // Seems to work but, currently missing the licenses field!
+// Should prune out all the 'valid' licensed modules so that the result is
+// the tree of modules whose sub-dep licenses are invalid.
 module.exports.pruneTreeByLicenses = (node, invalidLicensedModules) => {
-  console.log(node, invalidLicensedModules);
   let prunedNode
   if (node.dependencies) {
     const prunedDeps = {}
@@ -128,7 +129,7 @@ module.exports.pruneTreeByLicenses = (node, invalidLicensedModules) => {
   }
   let moduleId = `${node.from}@${node.version}`
   if (invalidLicensedModules[moduleId] !== undefined) {
-    return node
+    return { ...node, licenses: invalidLicensedModules[moduleId].licenses }
   }
 }
 
