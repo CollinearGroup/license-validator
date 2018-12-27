@@ -1,9 +1,43 @@
-const checker = require('../src/checker')
 const {
   expect
 } = require('chai')
+const rewire = require('rewire')
+
+describe('#loadConfig', () => {
+  let checker
+  before(() => {
+    checker = rewire('../src/checker.js')
+  })
+  it('should throw error if no config file found', () => {
+    expect(checker.loadConfig).to.throw
+  })
+
+  it('should load and validate a config file', async () => {
+    let readFile = async () => {
+      return ``
+    }
+    checker.__set__('readFile', readFile)
+    try {
+      await checker.loadConfig('./a/valid/filePath')
+      expect.fail("Should throw validation error")
+    } catch (e) {
+      expect(e.message).to.match(/licenses/)
+    }
+
+    readFile = async () => {
+      return `licenses:\n  - MIT`
+    }
+    checker.__set__('readFile', readFile)
+    const expectedApprovedLicenses = {
+      licenses: ['MIT']
+    }
+    expect(await checker.loadConfig('./a/valid/filePath')).to.eql(expectedApprovedLicenses)
+  })
+  
+})
 
 describe('#pruneTreeByLicenses', () => {
+  let checker = require('../src/checker.js')
 
   it('should return an empty dep tree when all licenses are valid', async () => {
     let node = {
