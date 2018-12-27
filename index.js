@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+const fs = require('fs-extra')
 const program = require('commander');
 const pkg = require('./package')
 const {
@@ -33,7 +33,13 @@ program
       await writeConfig(fileName, yamlObj)
     }
 
-    const approvedLicenses = await loadConfig('./.approved-licenses.yml')
+    const fileExists = await fs.exists(fileName)
+    if (!fileExists) {
+      console.log(`Config file ${fileName} not found. Run with option -i to generate a config file.`)
+      process.exit(1)
+    }
+
+    const approvedLicenses = await loadConfig(fileName)
     const isValid = await validate(approvedLicenses)
     if (!isValid) {
       console.error('Not all licenses are approved!');
