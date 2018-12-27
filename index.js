@@ -12,7 +12,6 @@ const fs = require('fs-extra')
 const jsYaml = require('js-yaml')
 const inquirer = require('inquirer')
 
-loadConfig()
 
 program
   .version(pkg.version, '-v, --version')
@@ -61,8 +60,8 @@ program
     //   console.log(await get())
     //   return
     // }
-
-    const isValid = await validate()
+    const approvedLicenses = await loadConfig('./.approved-licenses.yml')
+    const isValid = await validate(approvedLicenses)
     if (!isValid) {
       console.error('Not all licenses are approved!');
       process.exit(1)

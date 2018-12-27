@@ -19,24 +19,18 @@ let {
 init = promisify(init)
 
 const exec = promisify(require('child_process').exec)
-const readFile = promisify(fs.readFile)
+let readFile = promisify(fs.readFile)
 const {
   safeLoad
 } = require('js-yaml')
 
-const CFG_LOC = './.approved-licenses.yml'
-let validationConfig
-
-module.exports.loadConfig = async () => {
-  try {
-    validationConfig = safeLoad(await readFile(CFG_LOC))
-  } catch (error) {
-    // TODO: make this better
-    process.emitWarning('Unable to load a configuration')
-    validationConfig = {
-      licenses: []
-    }
+// Simply loads the config file
+module.exports.loadConfig = async configPath => {
+  const approvedLicenses = safeLoad(await readFile(configPath))
+  if (!_.isObject(approvedLicenses) || !_.isArray(approvedLicenses.licenses)) {
+    throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array.`)
   }
+  return approvedLicenses
 }
 
 // Builds the dependency tree of node modules.
@@ -89,10 +83,10 @@ module.exports.summary = async (pretty = false) => {
 }
 
 // Main method that initiates the checking process
-module.exports.validate = async (args) => {
+module.exports.validate = async (approvedLicenses) => {
   // Really only needs to run getLicenses and cross check it against a config file.
   const licenses = await this.getLicenses()
-  const invalidLicensedModules = this.getInvalidModules(licenses, validationConfig)
+  const invalidLicensedModules = this.getInvalidModules(licenses, approvedLicenses)
   if (invalidLicensedModules === undefined) {
     return true
   }
