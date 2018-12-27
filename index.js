@@ -17,6 +17,7 @@ program
   .option('--summary', 'Prints a summary report')
   .option('-i, --interactive', 'Runs in interactive mode.')
 
+
 // Default Action
 program
   // TODO: Move to testable function
@@ -30,6 +31,7 @@ program
     if (args.interactive) {      
       const yamlObj = await getAndValidateConfig(fileName)
       yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
+      yamlObj.modules = yamlObj.modules || []
       await writeConfig(fileName, yamlObj)
     }
 
@@ -39,12 +41,21 @@ program
       process.exit(1)
     }
 
-    const approvedLicenses = await loadConfig(fileName)
-    const isValid = await validate(approvedLicenses)
-    if (!isValid) {
-      console.error('Not all licenses are approved!');
+    let parsedConfig
+
+    try {
+      parsedConfig = await loadConfig(fileName)
+    } catch(err) {
+      console.error(err.message)
       process.exit(1)
     }
+
+    const isValid = await validate(parsedConfig)
+    if (!isValid) {
+      console.log('Not all licenses are approved!');
+      process.exit(1)
+    } 
+
     console.log(`Based on your ${fileName} config file, all your dependencies' licenses are valid.`)
   })
 

@@ -38,11 +38,15 @@ module.exports.getAndValidateConfig = async configPath => {
 
 // Simply loads the config file
 module.exports.loadConfig = async configPath => {
-  const approvedLicenses = safeLoad(await fs.readFile(configPath))
-  if (!_.isObject(approvedLicenses) || !_.isArray(approvedLicenses.licenses)) {
+  const config = safeLoad(await fs.readFile(configPath), { filename: configPath })
+  if (!_.isObject(config)) {
+    throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array and 'modules' array.`)
+  } else if (!_.isArray(config.licenses) ) {
     throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array.`)
+  } else if (!_.isArray(config.modules)) {
+    throw new Error(`Configuration file found but it does not have the expected root level 'modules' array.`)
   }
-  return approvedLicenses
+  return config
 }
 
 // Writes the config
@@ -123,10 +127,10 @@ module.exports.summary = async (pretty = false) => {
 }
 
 // Main method that initiates the checking process
-module.exports.validate = async (approvedLicenses) => {
+module.exports.validate = async (config) => {
   // Really only needs to run getLicenses and cross check it against a config file.
   const licenses = await this.getLicenses()
-  const invalidLicensedModules = this.getInvalidModules(licenses, approvedLicenses)
+  const invalidLicensedModules = this.getInvalidModules(licenses, config)
   if (invalidLicensedModules === undefined) {
     return true
   }
@@ -138,19 +142,31 @@ module.exports.validate = async (approvedLicenses) => {
 }
 
 // Compares a modules map with configured valid licenses.
-module.exports.getInvalidModules = (licenses, config) => {
+module.exports.getInvalidModules = (moduleList, config) => {
   const invalidModules = {}
-  let zeroFound = true
-  for (key in licenses) {
-    if (!config.licenses.includes(licenses[key].licenses)) {
-      invalidModules[key] = licenses[key]
-      zeroFound = false
+  
+  for (let moduleName in moduleList) {
+    let currentModule = moduleList[moduleName]
+    
+    let isLicenseValid = config.licenses ? this.isLicenseValidByConfig(config.licenses, currentModule.licenses) : false
+    let isModuleValid = config.modules ? this.isModuleValidByConfig(config.modules, moduleName) : false
+    if (!isLicenseValid && !isModuleValid) {
+        invalidModules[moduleName] = currentModule
     }
   }
-  if (zeroFound) {
+    
+  if (_.isEmpty(invalidModules)) {
     return
   }
   return invalidModules
+}
+
+module.exports.isLicenseValidByConfig = (configLicenses, license) => {
+  return configLicenses.includes(license)
+}
+
+module.exports.isModuleValidByConfig = (configModules, moduleName) => {
+  return configModules.includes(moduleName)
 }
 
 // Seems to work but, currently missing the licenses field!
