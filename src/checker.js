@@ -9,7 +9,7 @@ const {
   stringify
 } = JSON
 
-const fs = require('fs-extra')
+let fs = require('fs-extra')
 
 let {
   init,

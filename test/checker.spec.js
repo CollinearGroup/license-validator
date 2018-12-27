@@ -19,7 +19,7 @@ describe('#loadConfig', () => {
     let readFile = async () => {
       return ``
     }
-    checker.__set__('readFile', readFile)
+    checker.__set__('fs', {readFile})
     try {
       await checker.loadConfig('./a/valid/filePath')
       expect.fail("Should throw validation error")
@@ -30,7 +30,7 @@ describe('#loadConfig', () => {
     readFile = async () => {
       return `licenses:\n  - MIT`
     }
-    checker.__set__('readFile', readFile)
+    checker.__set__('fs', {readFile})
     const expectedApprovedLicenses = {
       licenses: ['MIT']
     }
