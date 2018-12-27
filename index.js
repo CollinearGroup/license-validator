@@ -17,7 +17,6 @@ program
   .option('--summary', 'Prints a summary report')
   .option('-i, --interactive', 'Runs in interactive mode.')
 
-
 // Default Action
 program
   // TODO: Move to testable function
@@ -54,7 +53,7 @@ program
     if (!isValid) {
       console.log('Not all licenses are approved!');
       process.exit(1)
-    } 
+    }
 
     console.log(`Based on your ${fileName} config file, all your dependencies' licenses are valid.`)
   })

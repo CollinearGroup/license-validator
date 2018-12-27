@@ -39,8 +39,8 @@ module.exports.getAndValidateConfig = async configPath => {
 // Simply loads the config file
 module.exports.loadConfig = async configPath => {
   const config = safeLoad(await fs.readFile(configPath), { filename: configPath })
-  if (!_.isObject(config)) {
-    throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array and 'modules' array.`)
+  if (!config) {
+    throw new Error(`Configuration file found but it is empty.`)
   } else if (!_.isArray(config.licenses) ) {
     throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array.`)
   } else if (!_.isArray(config.modules)) {
@@ -144,17 +144,14 @@ module.exports.validate = async (config) => {
 // Compares a modules map with configured valid licenses.
 module.exports.getInvalidModules = (moduleList, config) => {
   const invalidModules = {}
-  
   for (let moduleName in moduleList) {
     let currentModule = moduleList[moduleName]
-    
     let isLicenseValid = config.licenses ? this.isLicenseValidByConfig(config.licenses, currentModule.licenses) : false
     let isModuleValid = config.modules ? this.isModuleValidByConfig(config.modules, moduleName) : false
     if (!isLicenseValid && !isModuleValid) {
         invalidModules[moduleName] = currentModule
     }
   }
-    
   if (_.isEmpty(invalidModules)) {
     return
   }
