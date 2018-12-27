@@ -35,7 +35,7 @@ program
       let fileName = '.approved-licenses.yml'
       await fs.ensureFile(fileName)
       let config = await fs.readFile(fileName, 'utf8')
-      const yamlObj = jsYaml.safeLoad(config)
+      const yamlObj = jsYaml.safeLoad(config) || {licenses:[]}
 
       for (let licenseName in licenseMap) {
         if (!yamlObj.licenses.includes(licenseName)) {
