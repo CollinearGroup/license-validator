@@ -1,6 +1,9 @@
 const {
   expect
 } = require('chai')
+const {
+  stringify
+} = JSON
 const rewire = require('rewire')
 
 describe('#loadConfig', () => {
@@ -35,6 +38,57 @@ describe('#loadConfig', () => {
   })
   
 })
+
+describe('#getDepTree', () => {
+  it('should return json dependency tree', async() => {
+    let checker = rewire('../src/checker.js')
+    let stdout = stringify({
+      name: "arrsome-module",
+      dependencies: {
+        'a-dep': {
+          from: 'a-dep@1.0.0'
+        }
+      }
+    })
+    checker.__set__('exec', async () => {
+      return {
+        stdout: stdout,
+        stderr: ''
+      }
+    })
+    const result = await checker.getDepTree()
+    expect(result).to.eql({
+      name: "arrsome-module",
+      dependencies: {
+        'a-dep': {
+          from: 'a-dep@1.0.0'
+        }
+      }
+    })
+  })
+})
+
+describe('#getLicenses', () => {
+  it('should return module-license map', async () => {
+    let checker = rewire('../src/checker.js')
+    checker.__set__('init', async () => {
+      return { mockResult: true }
+    })
+    let result = await checker.getLicenses()
+    expect(result).to.eql({ mockResult: true })
+  })
+})
+
+// describe('#summary', () => {
+  // it('should return license summary', () => {
+    // let checker = rewire('../src/checker.js')
+    // TODO: give legit result? or just mock both?
+    // checker.__set__('init', async () => {
+      // return { mockResult: true }
+    // })
+    // let result = await checker.getLicenses()
+//   })
+// })
 
 describe('#pruneTreeByLicenses', () => {
   let checker = require('../src/checker.js')
