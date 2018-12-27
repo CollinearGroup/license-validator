@@ -61,13 +61,31 @@ module.exports.getLicenses = async () => {
 }
 
 // Shows all the licenses in use for each module.
-module.exports.summary = async () => {
+module.exports.summary = async (pretty = false) => {
   const opts = {
     start: './',
     production: true,
     summary: true,
   }
-  return asSummary(await init(opts))
+  let dependencies = await init(opts)
+
+  if (pretty) {
+    return asSummary(dependencies)
+  } else {
+    let licenses = {}
+
+    for (const name in dependencies) {
+      let dependency = dependencies[name]
+
+      if (licenses[dependency.licenses]) {
+        licenses[dependency.licenses]++
+      } else {
+        licenses[dependency.licenses] = 1
+      }
+    }
+
+    return licenses
+  }
 }
 
 // Main method that initiates the checking process
@@ -121,7 +139,8 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
       return undefined
     }
 
-    prunedNode = { ...node,
+    prunedNode = {
+      ...node,
       dependencies: prunedDeps
     }
 
