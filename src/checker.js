@@ -1,5 +1,5 @@
 const _ = require('lodash')
-
+const inquirer = require('inquirer')
 const {
   promisify,
 } = require('util')
@@ -9,7 +9,7 @@ const {
   stringify
 } = JSON
 
-const fs = require('fs')
+const fs = require('fs-extra')
 
 let {
   init,
@@ -19,18 +19,36 @@ let {
 init = promisify(init)
 
 const exec = promisify(require('child_process').exec)
-let readFile = promisify(fs.readFile)
 const {
-  safeLoad
+  safeLoad,
+  safeDump
 } = require('js-yaml')
+
+module.exports.getAndValidateConfig = async configPath => {
+  const configExists = await fs.exists(configPath)
+  if (configExists) {
+    return this.loadConfig(configPath)
+  }
+
+  return {
+    licenses: []
+  }
+
+}
 
 // Simply loads the config file
 module.exports.loadConfig = async configPath => {
-  const approvedLicenses = safeLoad(await readFile(configPath))
+  const approvedLicenses = safeLoad(await fs.readFile(configPath))
   if (!_.isObject(approvedLicenses) || !_.isArray(approvedLicenses.licenses)) {
     throw new Error(`Configuration file found but it does not have the expected root level 'licenses' array.`)
   }
   return approvedLicenses
+}
+
+// Writes the config
+module.exports.writeConfig = async(configPath, configObject) => {
+  let updatedConfig = safeDump(configObject)
+  await fs.writeFile(configPath, updatedConfig)
 }
 
 // Builds the dependency tree of node modules.
@@ -52,6 +70,28 @@ module.exports.getLicenses = async () => {
     production: true,
   }
   return await init(opts)
+}
+
+// Updates existing licenses based on user input and existing dependencies
+module.exports.getUserLicenseInput = async (existingLicenses) => {
+  let licenseMap = await this.summary()
+  const approvedLicenses = [...existingLicenses]
+  for (let licenseName in licenseMap) {
+    if (!existingLicenses.includes(licenseName)) {
+      let answer = await inquirer.prompt({
+        message: `${licenseMap[licenseName]} dependencies use the ${licenseName} license. Would you like to allow this license?`,
+        name: 'answerKey',
+        type: 'confirm',
+        default: false
+      })
+
+      if (answer['answerKey'] === true) {
+        approvedLicenses.push(licenseName)
+      }
+    }
+  }
+
+  return approvedLicenses
 }
 
 // Shows all the licenses in use for each module.
@@ -125,7 +165,8 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
       const dependency = node.dependencies[key]
       const prunedSubTreeNode = this.pruneTreeByLicenses(key, dependency, invalidLicensedModules)
       if (prunedSubTreeNode) {
-        prunedDeps[key] = { ...prunedSubTreeNode }
+        prunedDeps[key] = { ...prunedSubTreeNode
+        }
       }
     }
 
@@ -143,7 +184,9 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
 
   const moduleId = `${name}@${node.version}`
   if (invalidLicensedModules[moduleId] !== undefined) {
-    return { ...node, licenses: invalidLicensedModules[moduleId].licenses }
+    return { ...node,
+      licenses: invalidLicensedModules[moduleId].licenses
+    }
   }
 }
 
