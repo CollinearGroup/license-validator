@@ -10,18 +10,17 @@ const {
   getInvalidModuleDependencyTree,
   getAndValidateConfig,
   getUserLicenseInput,
+  getUserModulesInput,
   writeConfig,
   prettySummary
 } = require('./src/checker')
-const {
-  asTree,
-} = require('license-checker')
 
 program
   .version(pkg.version, '-v, --version')
   .option('--json', 'Prints a json report')
   .option('--summary', 'Prints a summary report')
   .option('-i, --interactive', 'Runs in interactive mode.')
+  .option('-m, --modules-only', 'Modifies module white list if in interactive mode.')
 
 // Default Action
 program
@@ -40,8 +39,10 @@ program
 
     if (args.interactive) {
       const yamlObj = await getAndValidateConfig(fileName)
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)
-      yamlObj.modules = yamlObj.modules || []
+      if(!args.modulesOnly){
+        yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)        
+      }
+      yamlObj.modules = await getUserModulesInput(yamlObj.licenses, yamlObj.modules) 
       await writeConfig(fileName, yamlObj)
     }
 
