@@ -11,6 +11,7 @@ const {
   getAndValidateConfig,
   getUserLicenseInput,
   writeConfig,
+  prettySummary
 } = require('./src/checker')
 const {
   asTree,
@@ -27,14 +28,19 @@ program
   // TODO: Move to testable function
   .action(async (args) => {
     let fileName = '.approved-licenses.yml'
-    if (args.summary) {
-      console.log(await summary(true))
+    if (args.summary) {      
+      let summaryMap = await summary(fileName)
+      let prettySummaryMap = prettySummary(summaryMap)
+      console.log(prettySummaryMap)
+      if(_.isEmpty(summaryMap.approved)) {
+        console.log(`Approved license list is empty. Run with option -i to generate a config file.`)
+      }
       return
     }
 
     if (args.interactive) {
       const yamlObj = await getAndValidateConfig(fileName)
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
+      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)
       yamlObj.modules = yamlObj.modules || []
       await writeConfig(fileName, yamlObj)
     }
@@ -56,8 +62,9 @@ program
 
     const depTree = await getInvalidModuleDependencyTree(parsedConfig)
     if (!_.isEmpty(depTree)) {
-      console.log(asTree(depTree))
-      console.log('Not all licenses are approved!')
+      let summaryMap = await summary(fileName)
+      let prettySummaryMap = prettySummary(summaryMap)
+      console.log(prettySummaryMap)
       process.exit(1)
     }
 

@@ -9,7 +9,7 @@ const {
 } = JSON
 
 let fs = require('fs-extra')
-
+const treeify = require('treeify')
 let {
   init,
   asSummary,
@@ -76,19 +76,22 @@ module.exports.getLicenses = async () => {
 
 // Updates existing licenses based on user input and existing dependencies
 module.exports.getUserLicenseInput = async (existingLicenses) => {
-  let licenseMap = await this.summary()
+  let licenseMap = await this.generateLicensesMap()
   const approvedLicenses = [...existingLicenses]
   for (let licenseName in licenseMap) {
     if (!existingLicenses.includes(licenseName)) {
       let answer = await inquirer.prompt({
         message: `${licenseMap[licenseName]} dependencies use the ${licenseName} license. Would you like to allow this license?`,
         name: 'answerKey',
-        type: 'confirm',
+        type: 'list',
+        choices: ['Y', 'N', 'Save and Quit'],
         default: false
       })
 
-      if (answer['answerKey'] === true) {
+      if (answer['answerKey'] === 'Y') {
         approvedLicenses.push(licenseName)
+      }  else if(answer['answerKey'] === 'Save and Quit') {
+          return approvedLicenses
       }
     }
   }
@@ -97,17 +100,34 @@ module.exports.getUserLicenseInput = async (existingLicenses) => {
 }
 
 // Shows all the licenses in use for each module.
-module.exports.summary = async (pretty = false) => {
+module.exports.summary = async (filePath) => {
+  const currentConfig = await this.getAndValidateConfig(filePath)  
+  let licenseMap = await this.generateLicensesMap()
+  let summary = {approved: {}, unapproved:{}}
+  for(let license in licenseMap ) {
+    if(currentConfig.licenses.includes(license)) {
+      summary.approved[license] = licenseMap[license]
+    } else {
+      summary.unapproved[license] = licenseMap[license]
+    }
+  }
+  return summary
+}
+
+module.exports.prettySummary = (summary) => { 
+  let approvedTree = _.isEmpty(summary.approved)?'  None':treeify.asTree(summary.approved, true)
+  let unApprovedTree = _.isEmpty(summary.unapproved)?'  None':treeify.asTree(summary.unapproved, true)
+  let prettySummary = `Licenses\n\nAPPROVED:\n${approvedTree}\nUNAPPROVED:\n${unApprovedTree}\n`
+  return prettySummary
+}
+// Get a map of total count of licenses
+module.exports.generateLicensesMap = async() => {
   const opts = {
     start: './',
     production: true,
     summary: true,
   }
-  let dependencies = await init(opts)
-
-  if (pretty) {
-    return asSummary(dependencies)
-  }
+  let dependencies = await init(opts)  
   let licenses = {}
   for (const name in dependencies) {
     let dependency = dependencies[name]
@@ -120,7 +140,6 @@ module.exports.summary = async (pretty = false) => {
   }
   return licenses
 }
-
 // Main method that initiates the checking process
 module.exports.getInvalidModuleDependencyTree = async config => {
   const licenses = await this.getLicenses()
