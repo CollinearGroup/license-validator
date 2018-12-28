@@ -6,7 +6,6 @@ const {
 
 const {
   parse,
-  stringify
 } = JSON
 
 let fs = require('fs-extra')
@@ -14,7 +13,6 @@ let fs = require('fs-extra')
 let {
   init,
   asSummary,
-  asTree,
 } = require('license-checker')
 init = promisify(init)
 
@@ -31,7 +29,8 @@ module.exports.getAndValidateConfig = async configPath => {
   }
 
   return {
-    licenses: []
+    licenses: [],
+    modules: []
   }
 
 }
@@ -62,7 +61,6 @@ module.exports.getDepTree = async () => {
     stdout,
     stderr
   } = await exec('npm list --json');
-  //TODO: Return nicer error.
   return parse(stdout)
 }
 
@@ -109,36 +107,29 @@ module.exports.summary = async (pretty = false) => {
 
   if (pretty) {
     return asSummary(dependencies)
-  } else {
-    let licenses = {}
-
-    for (const name in dependencies) {
-      let dependency = dependencies[name]
-
-      if (licenses[dependency.licenses]) {
-        licenses[dependency.licenses]++
-      } else {
-        licenses[dependency.licenses] = 1
-      }
-    }
-
-    return licenses
   }
+  let licenses = {}
+  for (const name in dependencies) {
+    let dependency = dependencies[name]
+
+    if (licenses[dependency.licenses]) {
+      licenses[dependency.licenses]++
+    } else {
+      licenses[dependency.licenses] = 1
+    }
+  }
+  return licenses
 }
 
 // Main method that initiates the checking process
-module.exports.validate = async (config) => {
-  // Really only needs to run getLicenses and cross check it against a config file.
+module.exports.getInvalidModuleDependencyTree = async config => {
   const licenses = await this.getLicenses()
   const invalidLicensedModules = this.getInvalidModules(licenses, config)
   if (invalidLicensedModules === undefined) {
-    return true
+    return
   }
-  // const invalidModuleLicenses = Object.values(invalidModules).map(el => el.licenses)
   const packageDepTree = await this.getDepTree()
-  const invalidLicensedModuleTree = this.pruneTreeByLicenses(packageDepTree.name, packageDepTree, invalidLicensedModules)
-  //TODO: This will just print a single top level for now.
-  console.log(asTree(invalidLicensedModuleTree))
+  return this.pruneTreeByLicenses(packageDepTree.name, packageDepTree, invalidLicensedModules)
 }
 
 // Compares a modules map with configured valid licenses.
@@ -202,14 +193,3 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
     }
   }
 }
-
-
-// Will look through a dep list and license list and assign license info to each module
-module.exports.assignLicenses = () => {
-  throw new Error('Not implemented yet.')
-}
-
-// Flags a license as bad?
-// module.exports.validateLicense = () => {
-// throw new Error('Not implemented yet.')
-// }

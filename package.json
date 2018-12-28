@@ -4,7 +4,8 @@
   "description": "Validates open source licenses for your project.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive"
+    "test": "mocha --recursive",
+    "coverage": "nyc --reporter=html --reporter=text mocha --recursive"
   },
   "bin": {
     "license-checker": "index.js"

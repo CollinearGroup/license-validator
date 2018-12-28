@@ -1,15 +1,20 @@
 #!/usr/bin/env node
+
+const _ = require('lodash')
 const fs = require('fs-extra')
 const program = require('commander');
 const pkg = require('./package')
 const {
   loadConfig,
   summary,
-  validate,
+  getInvalidModuleDependencyTree,
   getAndValidateConfig,
   getUserLicenseInput,
-  writeConfig
+  writeConfig,
 } = require('./src/checker')
+const {
+  asTree,
+} = require('license-checker')
 
 program
   .version(pkg.version, '-v, --version')
@@ -27,7 +32,7 @@ program
       return
     }
 
-    if (args.interactive) {      
+    if (args.interactive) {
       const yamlObj = await getAndValidateConfig(fileName)
       yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
       yamlObj.modules = yamlObj.modules || []
@@ -44,18 +49,19 @@ program
 
     try {
       parsedConfig = await loadConfig(fileName)
-    } catch(err) {
+    } catch (err) {
       console.error(err.message)
       process.exit(1)
     }
 
-    const isValid = await validate(parsedConfig)
-    if (!isValid) {
-      console.log('Not all licenses are approved!');
+    const depTree = await getInvalidModuleDependencyTree(parsedConfig)
+    if (!_.isEmpty(depTree)) {
+      console.log(asTree(depTree))
+      console.log('Not all licenses are approved!')
       process.exit(1)
     }
 
     console.log(`Based on your ${fileName} config file, all your dependencies' licenses are valid.`)
   })
 
-program.parse(process.argv);
+program.parse(process.argv)
