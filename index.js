@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const fs = require('fs-extra')
 const program = require('commander');
+const treeify = require('treeify')
 const pkg = require('./package')
 const {
   loadConfig,
@@ -62,10 +63,13 @@ program
     }
 
     const depTree = await getInvalidModuleDependencyTree(parsedConfig)
+    
     if (!_.isEmpty(depTree)) {
       let summaryMap = await summary(fileName)
       let prettySummaryMap = prettySummary(summaryMap)
       console.log(prettySummaryMap)
+      console.log(`UNAPPROVED MODULES:`)
+      console.log(treeify.asTree(depTree, true))
       process.exit(1)
     }
 

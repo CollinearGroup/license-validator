@@ -11,8 +11,7 @@ const {
 let fs = require('fs-extra')
 const treeify = require('treeify')
 let {
-  init,
-  asSummary,
+  init
 } = require('license-checker')
 init = promisify(init)
 
@@ -171,6 +170,7 @@ module.exports.prettySummary = (summary) => {
   let prettySummary = `Licenses\n\nAPPROVED:\n${approvedTree}\nUNAPPROVED:\n${unApprovedTree}\n`
   return prettySummary
 }
+
 // Get a map of total count of licenses
 module.exports.generateLicensesMap = async () => {
   const opts = {
@@ -196,7 +196,6 @@ module.exports.generateLicensesMap = async () => {
 module.exports.getInvalidModuleDependencyTree = async config => {
   const licenses = await this.getDependencies()
   const invalidLicensedModules = this.getInvalidModules(licenses, config)
-  // console.log(invalidLicensedModules)
   if (invalidLicensedModules === undefined) {
     return
   }
@@ -229,49 +228,35 @@ module.exports.isModuleValidByConfig = (configModules, moduleName) => {
   return configModules.includes(moduleName)
 }
 
-// Seems to work but, currently missing the licenses field!
-// Should prune out all the 'valid' licensed modules so that the result is
+// Prune out all the 'valid' licensed modules so that the result is
 // the tree of modules whose sub-dep licenses are invalid.
 module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
-  if(name.includes("validate-npm-package-license@")){
-    // console.log(node)
-    // console.log(node.licenses)
-    console.log(`${name}@${node.version}`)
-    console.log(node)
-    console.log(invalidLicensedModules[`${name}@${node.version}`])
+  let prunedNode = {}
+
+  let prunedDeps = {}
+  for (const key in node.dependencies) {
+    // dependency is an object
+    const dependency = node.dependencies[key]
+    const prunedSubTreeNode = this.pruneTreeByLicenses(key, dependency, invalidLicensedModules)
+    if (!_.isEmpty(prunedSubTreeNode)) {
+      prunedDeps[key] = { ...prunedSubTreeNode }
+    }
   }
-  let prunedNode
-  if (node.dependencies) {
-    const prunedDeps = {}
-    for (const key in node.dependencies) {
-      // dependency is an object
-      const dependency = node.dependencies[key]
-      const prunedSubTreeNode = this.pruneTreeByLicenses(key, dependency, invalidLicensedModules)
-      if (prunedSubTreeNode) {
-        prunedDeps[key] = {
-          ...prunedSubTreeNode
-        }
-      }
-    }
 
-    if (_.isEmpty(prunedDeps)) {
-      return undefined
-    }
-
+  if (!_.isEmpty(prunedDeps)) {
     prunedNode = {
-      ...node,
-      dependencies: prunedDeps
+      ...prunedDeps
     }
-
-    return prunedNode
   }
-
-  const moduleId = `${name.trim()}@${node.version.trim()}`
+  
+  const moduleId = `${name}@${node.version}`
   if (invalidLicensedModules[moduleId] !== undefined) {
-    console.log('lkdhfjaksdl')
-    return {
-      ...node,
-      licenses: invalidLicensedModules[moduleId].licenses
-    }
+    prunedNode.licenses = invalidLicensedModules[moduleId].licenses
+    prunedNode.version = node.version
+  } else if (!_.isEmpty(prunedDeps)) {
+    prunedNode.version = node.version
   }
+
+  return prunedNode
+  
 }
