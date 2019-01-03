@@ -146,7 +146,7 @@ describe('#getDependencies', () => {
   })
 })
 
-describe('#getUserLicenseInput', () => {
+xdescribe('#getUserLicenseInput', () => {
   it('should request and return approved licenses', async () => {
     const checker = rewire('../src/checker.js')
     checker.__set__('getDependencies', () => {
@@ -174,7 +174,7 @@ describe('#getUserLicenseInput', () => {
   })
 })
 
-describe('#summary', () => {
+xdescribe('#summary', () => {
   it('should return license summary', async () => {
     let checker = rewire('../src/checker.js')
     checker.__set__('init', async () => {
@@ -196,7 +196,7 @@ describe('#summary', () => {
   })
 })
 
-describe('#pruneTreeByLicenses', () => {
+xdescribe('#pruneTreeByLicenses', () => {
   let checker = require('../src/checker.js')
 
   it('should return an empty dep tree when all licenses are valid', async () => {
@@ -287,7 +287,7 @@ describe('#writeConfig', () => {
   })
 })
 
-describe('#getInvalidModuleDependencyTree', () => {
+xdescribe('#getInvalidModuleDependencyTree', () => {
   it('should return undefined when all modules are valid', async () => {
     const checker = rewire('../src/checker.js')
     // Deal with rewire bug with modeul.exports and 'this'
