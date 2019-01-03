@@ -3,6 +3,7 @@
 const _ = require('lodash')
 const fs = require('fs-extra')
 const program = require('commander');
+const treeify = require('treeify')
 const pkg = require('./package')
 const {
   loadConfig,
@@ -10,32 +11,37 @@ const {
   getInvalidModuleDependencyTree,
   getAndValidateConfig,
   getUserLicenseInput,
+  getUserModulesInput,
   writeConfig,
+  prettySummary
 } = require('./src/checker')
-const {
-  asTree,
-} = require('license-checker')
 
 program
   .version(pkg.version, '-v, --version')
-  .option('--json', 'Prints a json report')
   .option('--summary', 'Prints a summary report')
   .option('-i, --interactive', 'Runs in interactive mode.')
+  .option('-m, --modules-only', 'Modifies module white list if in interactive mode.')
 
 // Default Action
 program
-  // TODO: Move to testable function
   .action(async (args) => {
     let fileName = '.approved-licenses.yml'
     if (args.summary) {
-      console.log(await summary(true))
+      let summaryMap = await summary(fileName)
+      let prettySummaryMap = prettySummary(summaryMap)
+      console.log(prettySummaryMap)
+      if (_.isEmpty(summaryMap.approved)) {
+        console.log(`Approved license list is empty. Run with option -i to generate a config file.`)
+      }
       return
     }
 
     if (args.interactive) {
       const yamlObj = await getAndValidateConfig(fileName)
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
-      yamlObj.modules = yamlObj.modules || []
+      if (!args.modulesOnly) {
+        yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)
+      }
+      yamlObj.modules = await getUserModulesInput(yamlObj.licenses, yamlObj.modules)
       await writeConfig(fileName, yamlObj)
     }
 
@@ -55,9 +61,13 @@ program
     }
 
     const depTree = await getInvalidModuleDependencyTree(parsedConfig)
+
     if (!_.isEmpty(depTree)) {
-      console.log(asTree(depTree))
-      console.log('Not all licenses are approved!')
+      let summaryMap = await summary(fileName)
+      let prettySummaryMap = prettySummary(summaryMap)
+      console.log(prettySummaryMap)
+      console.log(`UNAPPROVED MODULES:`)
+      console.log(treeify.asTree(depTree, true))
       process.exit(1)
     }
 

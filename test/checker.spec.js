@@ -5,6 +5,7 @@ const {
   stringify
 } = JSON
 const rewire = require('rewire')
+const { EventEmitter } = require('events')
 
 describe('#loadConfig', () => {
   let checker
@@ -113,13 +114,19 @@ describe('#getDepTree', () => {
         }
       }
     })
-    checker.__set__('exec', async () => {
-      return {
-        stdout: stdout,
-        stderr: ''
-      }
+    let stdoutStream = new EventEmitter()
+    let cp = new EventEmitter()
+    checker.__set__('exec', () => {
+      cp.stdout = stdoutStream
+      return cp
     })
-    const result = await checker.getDepTree()
+    // Setup listener
+    const promise = checker.getDepTree()
+    // emit expected events
+    stdoutStream.emit('data', stdout)
+    cp.emit('close')
+    // Expect the promise to resolve on 'close'
+    const result = await promise
     expect(result).to.eql({
       name: "arrsome-module",
       dependencies: {
@@ -131,7 +138,7 @@ describe('#getDepTree', () => {
   })
 })
 
-describe('#getLicenses', () => {
+describe('#getDependencies', () => {
   it('should return module-license map', async () => {
     let checker = rewire('../src/checker.js')
     checker.__set__('init', async () => {
@@ -139,7 +146,7 @@ describe('#getLicenses', () => {
         mockResult: true
       }
     })
-    let result = await checker.getLicenses()
+    let result = await checker.getDependencies()
     expect(result).to.eql({
       mockResult: true
     })
@@ -149,21 +156,19 @@ describe('#getLicenses', () => {
 describe('#getUserLicenseInput', () => {
   it('should request and return approved licenses', async () => {
     const checker = rewire('../src/checker.js')
-    checker.__set__('summary', () => {
+    checker.__set__('generateLicensesMap', async () => {
       return {
         'Custom': 1, // false
         'MIT': 100, // not called
         'Apache 2.0': 100, // true
-        'GPL 1.0': 1, // false
+        'GPL 1.0': 1, // save and quit
       }
     })
-    // Yes to everything, should only be called once.
-    let counter = 0
+    let answers = ['N', 'Y', 'Save and Quit']
     checker.__set__('inquirer', {
       prompt: async () => {
-        // Every other call is opposite, starting with false.
         return {
-          answerKey: !!(counter++ % 2)
+          answerKey: answers.shift()
         }
       }
     })
@@ -174,96 +179,48 @@ describe('#getUserLicenseInput', () => {
   })
 })
 
-describe('#summary', () => {
-  it('should return license summary', async () => {
-    let checker = rewire('../src/checker.js')
-    checker.__set__('init', async () => {
+describe('#getUserModulesInput', () => {
+  it('should request and return approved modules', async () => {
+    const checker = rewire('../src/checker.js')
+    checker.__set__('getUnallowedDependencies', checker.getUnallowedDependencies)
+    checker.__set__('getDependencies', async () => {
       return {
-        'module-fire@1.0.0': {
-          licenses: "ISC"
+        'module-yes@1.0.0': {
+          licenses: 'Apache 2.0'
         },
-        'module-water@1.0.0': {
-          licenses: "ISC"
-        }
+        'module-existing@1.0.0': {
+          licenses: 'MIT'
+        },
+        'module-no@1.0.0': {
+          licenses: 'Custom'
+        },
+        'module-none@1.0.0': {
+          licenses: 'GPL 1.0'
+        },
       }
     })
-    let result = await checker.summary(true)
-    expect(result).to.equal(`└─ ISC: 2\n`)
-    result = await checker.summary()
-    expect(result).to.eql({
-      ISC: 2
+
+    // Test I do not want to modify the list.
+    let answers = [{ confirmKey: 'N' }]
+    checker.__set__('inquirer', {
+      prompt: async () => {
+        return answers.shift()
+      }
     })
-  })
-})
+    const existingLicenses = ['MIT']
+    const existingModules = ['module-existing@1.0.0']
+    let result = await checker.getUserModulesInput(existingLicenses, existingModules)
+    expect(result).to.eql(existingModules)
 
-describe('#pruneTreeByLicenses', () => {
-  let checker = require('../src/checker.js')
-
-  it('should return an empty dep tree when all licenses are valid', async () => {
-    let node = {
-      name: 'my-module',
-      version: '1.0.0',
-      dependencies: {
-        'sub-module-a': {
-          name: 'sub-module-a',
-          from: 'sub-module-a@^2.0.0',
-          version: '2.0.3'
-        }
-      }
-    }
-    let invalidLicensedModules = {}
-
-    const result = checker.pruneTreeByLicenses('my-module', node, invalidLicensedModules)
-    expect(result).to.be.undefined
-  })
-
-  it('should return all invalid licensed modules', async () => {
-    // Based on the node module dep tree output
-    let node = {
-      name: 'my-module',
-      dependencies: {
-        'sub-module-a': {
-          from: 'sub-module-a@2.0.0',
-          version: '2.0.0',
-          dependencies: {
-            'sub-module-a-b': {
-              from: 'sub-module-a-b@1.0.0',
-              version: '1.0.0'
-            },
-            'sub-module-d-b': {
-              from: 'sub-module-d-b@1.0.0',
-              version: '1.0.0'
-            }
-          }
-        }
-      }
-    }
-    // Based on the output from getInvalidModules()
-    let invalidLicensedModules = {
-      'sub-module-a-b@1.0.0': {
-        licenses: 'MIT'
-      }
-    }
-
-    const result = checker.pruneTreeByLicenses('my-module', node, invalidLicensedModules)
-    const expectedDependencies = {
-      name: 'my-module',
-      dependencies: {
-        'sub-module-a': {
-          from: 'sub-module-a@2.0.0',
-          version: '2.0.0',
-          dependencies: {
-            'sub-module-a-b': {
-              from: 'sub-module-a-b@1.0.0',
-              version: '1.0.0',
-              licenses: 'MIT'
-            }
-          }
-        }
-      }
-    }
-
-    expect(result).to.eql(expectedDependencies)
+    // Test I want to modify and add stuff!
+    answers = [
+      { answerKey: 'Y' },
+      { answerKey: 'Y' },
+      { answerKey: 'N' },
+      { answerKey: 'Save and Quit' },
+    ]
+    result = await checker.getUserModulesInput(existingLicenses, existingModules)
+    expect(result).to.eql(['module-existing@1.0.0', 'module-yes@1.0.0'])
   })
 })
 
@@ -285,46 +242,6 @@ describe('#writeConfig', () => {
     })
     expect(calledArguments[1]).to.equal(`licenses:\n  - MIT\nmodules: []\n`)
   })
-})
-
-describe('#getInvalidModuleDependencyTree', () => {
-  it('should return undefined when all modules are valid', async () => {
-    const checker = rewire('../src/checker.js')
-    // Deal with rewire bug with modeul.exports and 'this'
-    for (let key in checker) {
-      checker.__set__(key, checker[key])
-    }
-    checker.__set__('getLicenses', async () => {
-      return {
-        'modules@1.0.0': {
-          licenses: 'MIT'
-        }
-      }
-    })
-    let config = {
-      licenses: ['MIT']
-    }
-    const result = await checker.getInvalidModuleDependencyTree(config)
-    expect(result).to.be.undefined
-
-    // ensures we're just calling through the functions.
-    checker.__set__('getDepTree', async () => {
-      return {}
-    })
-    checker.__set__('pruneTreeByLicenses', async () => {
-      return {
-        name: 'my-module'
-      }
-    })
-    config = {
-      license: []
-    }
-    const invalidLicenseModuleTree = await checker.getInvalidModuleDependencyTree(config)
-    expect(invalidLicenseModuleTree).to.eql({
-      name: 'my-module'
-    })
-  })
-  it('should return invalid module tree when modules are invalid', () => {})
 })
 
 describe('#getInvalidModules', () => {
