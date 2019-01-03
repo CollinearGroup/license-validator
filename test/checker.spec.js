@@ -5,6 +5,7 @@ const {
   stringify
 } = JSON
 const rewire = require('rewire')
+const { EventEmitter } = require('events')
 
 describe('#loadConfig', () => {
   let checker
@@ -113,13 +114,19 @@ describe('#getDepTree', () => {
         }
       }
     })
-    checker.__set__('exec', async () => {
-      return {
-        stdout: stdout,
-        stderr: ''
-      }
+    let stdoutStream = new EventEmitter()
+    let cp = new EventEmitter()
+    checker.__set__('exec', () => {
+      cp.stdout = stdoutStream
+      return cp
     })
-    const result = await checker.getDepTree()
+    // Setup listener
+    const promise = checker.getDepTree()
+    // emit expected events
+    stdoutStream.emit('data', stdout)
+    cp.emit('close')
+    // Expect the promise to resolve on 'close'
+    const result = await promise
     expect(result).to.eql({
       name: "arrsome-module",
       dependencies: {

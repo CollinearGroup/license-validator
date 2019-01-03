@@ -15,7 +15,10 @@ let {
 } = require('license-checker')
 init = promisify(init)
 
-const exec = promisify(require('child_process').exec)
+let {
+  exec
+} = require('child_process')
+
 const {
   safeLoad,
   safeDump
@@ -63,11 +66,18 @@ module.exports.writeConfig = async (configPath, configObject) => {
 // Builds the dependency tree of node modules.
 module.exports.getDepTree = async () => {
   // TODO: Prefer a programmatic way to do this, but performance matters.
-  const {
-    stdout,
-    stderr
-  } = await exec('npm list --json');
-  return parse(stdout)
+  let result = ''
+  // https://nodejs.org/api/child_process.html#child_process_maxbuffer_and_unicode
+  // It won't throw an error (except in sync mode) it just kills the process...
+  const cp = exec('npm list --json', {
+    maxBuffer: 1024 * 1024 * 2
+  });
+  cp.stdout.on('data', data => result += data )
+  return new Promise((resolve, reject) => {
+    cp.on('close', () => {
+      resolve(parse(result))
+    })
+  })
 }
 
 // Runs license-checker to just the list of licenses in the format
