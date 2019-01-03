@@ -4,5 +4,6 @@ licenses:
   - BSD-2-Clause
   - BSD-3-Clause
   - Apache-2.0
-modules:
-  - spdx-exceptions@2.2.0
+  - CC-BY-3.0
+  - CC0-1.0
+modules: []

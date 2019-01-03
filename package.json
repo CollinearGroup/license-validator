@@ -8,7 +8,7 @@
     "coverage": "nyc --reporter=html --reporter=text mocha --recursive"
   },
   "bin": {
-    "license-checker": "index.js"
+    "license-validator": "index.js"
   },
   "repository": {
     "type": "git",

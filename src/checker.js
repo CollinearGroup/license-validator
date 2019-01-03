@@ -41,7 +41,9 @@ module.exports.getAndValidateConfig = async configPath => {
 
 // Simply loads the config file
 module.exports.loadConfig = async configPath => {
-  const config = safeLoad(await fs.readFile(configPath), { filename: configPath })
+  const config = safeLoad(await fs.readFile(configPath), {
+    filename: configPath
+  })
   if (!config) {
     throw new Error(`Configuration file found but it is empty.`)
   } else if (!_.isArray(config.licenses)) {
@@ -71,7 +73,9 @@ module.exports.getDepTree = async () => {
 // Runs license-checker to just the list of licenses in the format
 // that license-checker handles so we can safely call other functions like `asSummary`
 module.exports.getDependencies = async (opts = {}) => {
-  return await init({ ...defaultLicenseInitOpts, ...opts })
+  return await init({ ...defaultLicenseInitOpts,
+    ...opts
+  })
 }
 
 // Updates existing licenses based on user input and existing dependencies
@@ -99,7 +103,9 @@ module.exports.getUserLicenseInput = async (existingLicenses) => {
 }
 
 module.exports.getUserModulesInput = async (existingLicenses, existingModules) => {
-  let dependencies = await this.getDependencies({ summary: true })
+  let dependencies = await this.getDependencies({
+    summary: true
+  })
   let unallowedDependencyMap = await this.getUnallowedDependencies(existingLicenses, existingModules, dependencies)
   const approvedModules = [...existingModules]
 
@@ -153,7 +159,10 @@ module.exports.getUnallowedDependencies = async (existingLicenses, existingModul
 module.exports.summary = async (filePath) => {
   const currentConfig = await this.getAndValidateConfig(filePath)
   let licenseMap = await this.generateLicensesMap()
-  let summary = { approved: {}, unapproved: {} }
+  let summary = {
+    approved: {},
+    unapproved: {}
+  }
   for (let license in licenseMap) {
     if (currentConfig.licenses.includes(license)) {
       summary.approved[license] = licenseMap[license]
@@ -239,7 +248,8 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
     const dependency = node.dependencies[key]
     const prunedSubTreeNode = this.pruneTreeByLicenses(key, dependency, invalidLicensedModules)
     if (!_.isEmpty(prunedSubTreeNode)) {
-      prunedDeps[key] = { ...prunedSubTreeNode }
+      prunedDeps[key] = { ...prunedSubTreeNode
+      }
     }
   }
 
@@ -248,7 +258,7 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
       ...prunedDeps
     }
   }
-  
+
   const moduleId = `${name}@${node.version}`
   if (invalidLicensedModules[moduleId] !== undefined) {
     prunedNode.licenses = invalidLicensedModules[moduleId].licenses
@@ -258,5 +268,5 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
   }
 
   return prunedNode
-  
+
 }

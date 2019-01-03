@@ -7,6 +7,10 @@ const {
 } = require('child_process')
 const fs = require('fs-extra')
 const CONFIG_FILENAME = '.approved-licenses.yml'
+
+// 
+// Helper functions and data to simulate user CLI interaction.
+// 
 const inputKey = {
   up: "\\027[A",
   down: "\\027[B",
@@ -14,6 +18,34 @@ const inputKey = {
   right: "\\027[C",
 }
 
+// This should not only be the current config checked into git, but also
+// an example of valid config file.
+const expectedCurrentConfigFile = [
+  'licenses:',
+  '  - ISC',
+  '  - MIT',
+  '  - BSD-2-Clause',
+  '  - BSD-3-Clause',
+  '  - Apache-2.0',
+  '  - CC-BY-3.0',
+  '  - CC0-1.0',
+  'modules: []',
+  '',
+].join('\n')
+
+// contains at least one invalid module that will be interactively approved
+// in a test.
+const invalidModuleConfig = [
+  'licenses:',
+  '  - ISC',
+  '  - MIT',
+  '  - BSD-2-Clause',
+  '  - BSD-3-Clause',
+  '  - Apache-2.0',
+  '  - CC-BY-3.0',
+  'modules: []',
+  '',
+].join('\n')
 
 function yes(cp) {
   cp.stdin.write(`${inputKey.down}\n`)
@@ -49,35 +81,7 @@ function isAllowModulePrompt(buffer) {
   )
 }
 
-// This should not only be the current config checked into git, but also
-// an example of valid config file.
-const expectedCurrentConfigFile = [
-  'licenses:',
-  '  - ISC',
-  '  - MIT',
-  '  - BSD-2-Clause',
-  '  - BSD-3-Clause',
-  '  - Apache-2.0',
-  '  - CC-BY-3.0',
-  '  - CC0-1.0',
-  'modules: []',
-  '',
-].join('\n')
-
-// contains at least one invalid module that will be interactively approved
-// in a test.
-const invalidModuleConfig = [
-  'licenses:',
-  '  - ISC',
-  '  - MIT',
-  '  - BSD-2-Clause',
-  '  - BSD-3-Clause',
-  '  - Apache-2.0',
-  '  - CC-BY-3.0',
-  'modules: []',
-  '',
-].join('\n')
-
+// Allows the integration test to run on this repo's package.json and installed modules.
 async function stash(fileContents) {
   await fs.remove('./tmp')
   await fs.ensureDir('./tmp')
@@ -87,12 +91,16 @@ async function stash(fileContents) {
     await fs.writeFile(CONFIG_FILENAME, fileContents)
   }
 }
-
 async function restore() {
   await fs.copy(`tmp/${CONFIG_FILENAME}`, `${CONFIG_FILENAME}`)
 }
 
-describe('integration test: current state', () => {
+// 
+// Tests
+// Since many of these spawn processes and do I/O most need large timeouts.
+// 
+
+describe('integration test: validates current repo is in a valid state', () => {
 
   before(async () => {
     await stash(expectedCurrentConfigFile)
@@ -137,18 +145,9 @@ describe('integration test: current state', () => {
     } = spawnSync('./index.js', ['--summary'])
     expect(stdout.toString('utf-8')).to.equal(expectedResult)
   })
-
-  it('should warn when approved list is empty', async () => {
-    await fs.writeFile(CONFIG_FILENAME, 'licenses: []\nmodules: []\n')
-    const {
-      stdout
-    } = spawnSync('./index.js', ['--summary'])
-    expect(stdout.toString('utf-8')).to.match(/Approved license list is empty. Run with option -i to generate a config file./)
-
-  })
 })
 
-describe('integration test: bad files', () => {
+describe('integration test: validates bad files are cleanly handled', () => {
 
   before(async () => {
     await stash()
@@ -156,6 +155,14 @@ describe('integration test: bad files', () => {
 
   after(async () => {
     await restore()
+  })
+
+  it('should warn when approved list is empty', async () => {
+    await fs.writeFile(CONFIG_FILENAME, 'licenses: []\nmodules: []\n')
+    const {
+      stdout
+    } = spawnSync('./index.js', ['--summary'])
+    expect(stdout.toString('utf-8')).to.match(/Approved license list is empty. Run with option -i to generate a config file./)
   })
 
   it('should error on bad files', async () => {
@@ -175,7 +182,6 @@ describe('integration test: bad files', () => {
       stdout: emptyConfigResult
     } = spawnSync('./index.js')
     expect(emptyConfigResult.toString('utf-8')).to.match(/APPROVED:\n\s+None/)
-
   }).timeout(10000)
 
   it('should error on invalid yml', async () => {
@@ -189,7 +195,7 @@ describe('integration test: bad files', () => {
   }).timeout(10000)
 })
 
-describe('integration tests: interactive mode', () => {
+describe('integration tests: validates interactive mode', () => {
   before(async () => {
     await stash()
   })
@@ -265,7 +271,5 @@ describe('integration tests: interactive mode', () => {
         done()
       }).catch(done)
     })
-    
   }).timeout(10000)
-
 })
