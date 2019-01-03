@@ -131,7 +131,7 @@ describe('#getDepTree', () => {
   })
 })
 
-describe('#getLicenses', () => {
+describe('#getDependencies', () => {
   it('should return module-license map', async () => {
     let checker = rewire('../src/checker.js')
     checker.__set__('init', async () => {
@@ -139,7 +139,7 @@ describe('#getLicenses', () => {
         mockResult: true
       }
     })
-    let result = await checker.getLicenses()
+    let result = await checker.getDependencies()
     expect(result).to.eql({
       mockResult: true
     })
@@ -149,7 +149,7 @@ describe('#getLicenses', () => {
 describe('#getUserLicenseInput', () => {
   it('should request and return approved licenses', async () => {
     const checker = rewire('../src/checker.js')
-    checker.__set__('summary', () => {
+    checker.__set__('getDependencies', () => {
       return {
         'Custom': 1, // false
         'MIT': 100, // not called
