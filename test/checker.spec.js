@@ -172,6 +172,51 @@ describe('#getUserLicenseInput', () => {
   })
 })
 
+describe('#getUserModulesInput', () => {
+  it('should request and return approved modules', async () => {
+    const checker = rewire('../src/checker.js')
+    checker.__set__('getUnallowedDependencies', checker.getUnallowedDependencies)
+    checker.__set__('getDependencies', async () => {
+      return {
+        'module-yes@1.0.0': {
+          licenses: 'Apache 2.0'
+        },
+        'module-existing@1.0.0': {
+          licenses: 'MIT'
+        },
+        'module-no@1.0.0': {
+          licenses: 'Custom'
+        },
+        'module-none@1.0.0': {
+          licenses: 'GPL 1.0'
+        },
+      }
+    })
+
+    // Test I do not want to modify the list.
+    let answers = [{ confirmKey: 'N' }]
+    checker.__set__('inquirer', {
+      prompt: async () => {
+        return answers.shift()
+      }
+    })
+    const existingLicenses = ['MIT']
+    const existingModules = ['module-existing@1.0.0']
+    let result = await checker.getUserModulesInput(existingLicenses, existingModules)
+    expect(result).to.eql(existingModules)
+
+    // Test I want to modify and add stuff!
+    answers = [
+      { answerKey: 'Y' },
+      { answerKey: 'Y' },
+      { answerKey: 'N' },
+      { answerKey: 'Save and Quit' },
+    ]
+    result = await checker.getUserModulesInput(existingLicenses, existingModules)
+    expect(result).to.eql(['module-existing@1.0.0', 'module-yes@1.0.0'])
+  })
+})
+
 describe('#writeConfig', () => {
   it('should write the config to yaml', async () => {
     const checker = rewire('../src/checker.js')
