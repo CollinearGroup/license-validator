@@ -4,8 +4,8 @@
   "description": "Validates open source licenses for your project.",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha --recursive && nyc report --reporter=text-lcov | coveralls",
-    "coverage": "nyc --reporter=html --reporter=text mocha --recursive"
+    "test": "nyc mocha --recursive",
+    "report-coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "bin": {
     "license-validator": "index.js"
