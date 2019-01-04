@@ -1,6 +1,9 @@
 # license-validator
 > Validates Open Source Licenses for Nodejs Projects
 
+[![Build Status](https://travis-ci.org/CollinearGroup/license-validator.svg?branch=master)](https://travis-ci.org/travis-ci/travis-web)
+[![Coverage Status](https://coveralls.io/repos/github/CollinearGroup/license-validator/badge.svg?branch=master)](https://coveralls.io/github/CollinearGroup/license-validator?master)
+
 ## Usage
 
 First-time setup
