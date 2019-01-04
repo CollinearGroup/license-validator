@@ -1,6 +1,14 @@
 language: node_js
 node_js:
-  - "node"
+- node
 script:
-  - npm test
-  - npm run report-coverage
+- npm test
+- npm run report-coverage
+deploy:
+  provider: npm
+  email: dvilla@collineargroup.com
+  api_key:
+    secure: N9NBY0qIx+HkeNfqgBcajxEhZ1awMUnMbxmLqToZMKn8bEAM7Gx/M5reiE5aYZSMH8gFZWy5WduljtD6lk+g98oQ8LoEj+8VFG+ocQTvVv0Pg5y3c3BU/TvZVXkQtg7XvvPcfIQrLoWDhZubXWBZZTrJLXfUFc9pMiAxGpXqOnwKPV5nYd7JC8BOtfbaV74HXpJOJ51mkySkKgqInntq8kvvQQ+VarOCKntdN8D15klUC21OSu7wls/vjdeoQR2AxulDNCuqh7phNeoR9Q6xjBY3F9HA4dYnLEllQaQqbs7Sz0I44538GFKg8e5GD3TS7zEc9lf/Gh+gYQ1PY94qge2eL5mn2cjzSTa9S4tVfj5XzdgULossTRpqi6LaNE+I1PCmtUoDLyqnare3df7VCANhS/HZp1QluTy11qY4mM3EQySqFUj+vrNiI+ZpXA8nlifvyopHrzk/EMl6NgFv994iXqmE9XLKMUOxYFkK3oJ1YRPVsuIe4wOJkkXE7CHJHbRiVi9Wh750qKILd8NZCwCUvH6GpTp5v6MXzK4C/+5b6R08Vwd+umwrSmNKs9azImgqKpzdEZ9gNzLDrWv1mOJzstFVPiKj2j25Yo2I0/V+uhn9k/rdLnBG4NmmE2dR9rSK0Gfgh/SpG0ocb4GRU3DVX4SQawR7GwKSMOAE1Ps=
+  on:
+    tags: true
+    repo: CollinearGroup/license-validator
