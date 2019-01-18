@@ -72,7 +72,7 @@ module.exports.getDepTree = async () => {
   const cp = exec('npm list --json', {
     maxBuffer: 1024 * 1024 * 2
   });
-  cp.stdout.on('data', data => result += data )
+  cp.stdout.on('data', data => result += data)
   return new Promise((resolve, reject) => {
     cp.on('close', () => {
       resolve(parse(result))
@@ -90,7 +90,10 @@ module.exports.getDependencies = async (opts = {}) => {
 
 // Updates existing licenses based on user input and existing dependencies
 module.exports.getUserLicenseInput = async (existingLicenses) => {
-  let licenseMap = await this.generateLicensesMap()
+  // TODO: clean up
+  let {
+    licenses: licenseMap
+  } = await this.generateLicensesMap()
   const approvedLicenses = [...existingLicenses]
   for (let licenseName in licenseMap) {
     if (!existingLicenses.includes(licenseName)) {
@@ -168,10 +171,14 @@ module.exports.getUnallowedDependencies = async (existingLicenses, existingModul
 // Shows all the licenses in use for each module.
 module.exports.summary = async (filePath) => {
   const currentConfig = await this.getAndValidateConfig(filePath)
-  let licenseMap = await this.generateLicensesMap()
+  let {
+    licenses: licenseMap,
+    unprocessedLicenseEntries
+  } = await this.generateLicensesMap()
   let summary = {
     approved: {},
-    unapproved: {}
+    unapproved: {},
+    unprocessedLicenseEntries
   }
   for (let license in licenseMap) {
     if (currentConfig.licenses.includes(license)) {
@@ -186,11 +193,36 @@ module.exports.summary = async (filePath) => {
 module.exports.prettySummary = (summary) => {
   let approvedTree = _.isEmpty(summary.approved) ? '  None' : treeify.asTree(summary.approved, true)
   let unApprovedTree = _.isEmpty(summary.unapproved) ? '  None' : treeify.asTree(summary.unapproved, true)
-  let prettySummary = `Licenses\n\nAPPROVED:\n${approvedTree}\nUNAPPROVED:\n${unApprovedTree}\n`
+  let unprocessedTree = _.isEmpty(summary.unprocessedLicenseEntries) ? '  None' : treeify.asTree(summary.unprocessedLicenseEntries, true)
+
+  let prettySummary = [
+    `Licenses`,
+    '',
+    '',
+    'APPROVED',
+    approvedTree,
+    'UNAPPROVED',
+    unApprovedTree,
+    'UNPROCESSED',
+    unprocessedTree,
+    '',
+  ].join('\n')
+
   return prettySummary
 }
 
-// Get a map of total count of licenses
+/**
+ * Get an object of total count of licenses
+ * Example:
+ * {
+ *   licenseMap: {
+ *     'GPL-2.0': 23
+ *   },
+ *   unprocessedLicenseEntries: {
+ *     'json-schema': ['BSD', 'AFLv2.1']
+ *   }
+ * }
+ */
 module.exports.generateLicensesMap = async () => {
   const opts = {
     start: './',
@@ -199,16 +231,30 @@ module.exports.generateLicensesMap = async () => {
   }
   let dependencies = await init(opts)
   let licenses = {}
+  let unprocessedLicenseEntries = {}
   for (const name in dependencies) {
     let dependency = dependencies[name]
 
+    // Should only handle licenses that follow the npm package.json recommendations
+    if (!this.canBeProcessed(dependency.licenses)) {
+      unprocessedLicenseEntries[name] = dependency.licenses
+      continue
+    }
     if (licenses[dependency.licenses]) {
       licenses[dependency.licenses]++
     } else {
       licenses[dependency.licenses] = 1
     }
   }
-  return licenses
+  return {
+    licenses,
+    unprocessedLicenseEntries
+  }
+}
+
+// If it is not a string you have to specifically allow the module.
+module.exports.canBeProcessed = (licenseEntry) => {
+  return typeof licenseEntry === 'string'
 }
 
 // Main method that initiates the checking process
