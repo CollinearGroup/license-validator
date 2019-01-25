@@ -47,15 +47,33 @@ const invalidModuleConfig = [
   '',
 ].join('\n')
 
+const invalidLicensesConfig = [
+  'licenses:',
+  '  - ISC',
+  '  - MIT',
+  '  - BSD-2-Clause',
+  '  - BSD-3-Clause',
+  '  - Apache-2.0',
+  'modules: []',
+  '',
+].join('\n')
+
 function yes(cp) {
   cp.stdin.write(`${inputKey.down}\n`)
 }
 
-function no({
-  write
-}) {
-  write(`\n`)
+function saveAndQuit(cp) {
+  cp.stdin.write(`${inputKey.down}`)
+  // setTimeout(() => {
+  //   console.log('===== Running');
+  //   cp.stdin.write(`${inputKey.down}\n`)
+  // }, 4000)
 }
+
+function no(cp) {
+  cp.stdin.write(`\n`)
+}
+
 
 function isAllowLicensePrompt(buffer) {
   return !!( // caste to boolean
@@ -206,6 +224,62 @@ describe('integration tests: validates interactive mode', () => {
   after(async () => {
     await restore()
   })
+
+  it('should be able to aasdlfjasdlfkjasdflk pprove all licenses', (done) => {
+    // Write a file that should be missing 2 licenses
+    fs.writeFileSync(CONFIG_FILENAME, invalidLicensesConfig)
+    const cp = spawn('./index.js', ['-i'])
+    let promptCount = 0
+    cp.stdout.on('data', data => {
+      process.stdout.write(JSON.stringify(data.toString('utf8')))
+      process.stdout.write('\n')
+      if (isAllowLicensePrompt(data)) {
+        // First license, approve
+        if (promptCount === 0) {
+          console.log('==== SAY YES');
+          yes(cp)
+        }
+        // Second license, save/quit
+        if (promptCount === 1) {
+          console.log('==== SAVE AND QUIT');
+          saveAndQuit(cp)
+
+          setTimeout(() => {
+            saveAndQuit(cp)
+            // cp.stdin.write('\n')
+          }, 4000);
+        }
+        promptCount++
+        console.log('==== count is at ', promptCount);
+      }
+
+    })
+    cp.on('error', err => {
+      console.log(err);
+      expect.fail()
+    })
+    cp.on('close', () => {
+      fs.readFile(CONFIG_FILENAME, 'utf8').then(data => {
+        expect(data).to.equal([
+          'licenses:',
+          '  - ISC',
+          '  - MIT',
+          '  - BSD-2-Clause',
+          '  - BSD-3-Clause',
+          '  - Apache-2.0',
+          '  - CC-BY-3.0', // approved
+          // '  - CC0-1.0',// save/quit before any action taken
+          'modules: []',
+          '',
+        ].join('\n'))
+        done()
+      }).catch(err => {
+        console.log(err);
+        done(err)
+      })
+    })
+  }).timeout(10000)
+
 
   it('should be able to approve all licenses', (done) => {
     fs.removeSync(CONFIG_FILENAME)
