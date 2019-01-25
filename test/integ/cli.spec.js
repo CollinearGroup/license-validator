@@ -126,7 +126,6 @@ describe('integration test: validates current repo is in a valid state', () => {
     const expectedResult = [
       `Licenses`,
       '',
-      '',
       'APPROVED:',
       '├─ ISC: 21',
       '├─ MIT: 58',

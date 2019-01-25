@@ -90,7 +90,6 @@ module.exports.getDependencies = async (opts = {}) => {
 
 // Updates existing licenses based on user input and existing dependencies
 module.exports.getUserLicenseInput = async (existingLicenses) => {
-  // TODO: clean up
   let {
     licenses: licenseMap
   } = await this.generateLicensesMap()
@@ -198,7 +197,6 @@ module.exports.prettySummary = (summary) => {
   let prettySummary = [
     `Licenses`,
     '',
-    '',
     'APPROVED:',
     approvedTree,
     'UNAPPROVED:',
@@ -212,7 +210,8 @@ module.exports.prettySummary = (summary) => {
 
 /**
  * Get an object of total count of licenses
- * Example:
+ *
+ * Example return
  * {
  *   licenses: {
  *     'GPL-2.0': 23
