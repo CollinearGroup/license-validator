@@ -191,21 +191,20 @@ module.exports.summary = async (filePath) => {
 }
 
 module.exports.prettySummary = (summary) => {
-  let approvedTree = _.isEmpty(summary.approved) ? '  None' : treeify.asTree(summary.approved, true)
-  let unApprovedTree = _.isEmpty(summary.unapproved) ? '  None' : treeify.asTree(summary.unapproved, true)
-  let unprocessedTree = _.isEmpty(summary.unprocessedLicenseEntries) ? '  None' : treeify.asTree(summary.unprocessedLicenseEntries, true)
+  let approvedTree = _.isEmpty(summary.approved) ? '  None\n' : treeify.asTree(summary.approved, true)
+  let unApprovedTree = _.isEmpty(summary.unapproved) ? '  None\n' : treeify.asTree(summary.unapproved, true)
+  let unprocessedTree = _.isEmpty(summary.unprocessedLicenseEntries) ? '  None\n' : treeify.asTree(summary.unprocessedLicenseEntries, true)
 
   let prettySummary = [
     `Licenses`,
     '',
     '',
-    'APPROVED',
+    'APPROVED:',
     approvedTree,
-    'UNAPPROVED',
+    'UNAPPROVED:',
     unApprovedTree,
-    'UNPROCESSED',
+    'UNPROCESSED:',
     unprocessedTree,
-    '',
   ].join('\n')
 
   return prettySummary
@@ -215,7 +214,7 @@ module.exports.prettySummary = (summary) => {
  * Get an object of total count of licenses
  * Example:
  * {
- *   licenseMap: {
+ *   licenses: {
  *     'GPL-2.0': 23
  *   },
  *   unprocessedLicenseEntries: {

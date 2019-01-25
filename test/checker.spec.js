@@ -153,32 +153,6 @@ describe('#getDependencies', () => {
   })
 })
 
-describe('#getUserLicenseInput', () => {
-  it('should request and return approved licenses', async () => {
-    const checker = rewire('../src/checker.js')
-    checker.__set__('generateLicensesMap', async () => {
-      return {
-        'Custom': 1, // false
-        'MIT': 100, // not called
-        'Apache 2.0': 100, // true
-        'GPL 1.0': 1, // save and quit
-      }
-    })
-    let answers = ['N', 'Y', 'Save and Quit']
-    checker.__set__('inquirer', {
-      prompt: async () => {
-        return {
-          answerKey: answers.shift()
-        }
-      }
-    })
-    const existingLicenses = ['MIT']
-
-    const result = await checker.getUserLicenseInput(existingLicenses)
-    expect(result).to.eql(['MIT', 'Apache 2.0'])
-  })
-})
-
 describe('#getUserModulesInput', () => {
   it('should request and return approved modules', async () => {
     const checker = rewire('../src/checker.js')
