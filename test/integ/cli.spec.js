@@ -7,6 +7,8 @@ const {
 } = require('child_process')
 const fs = require('fs-extra')
 const CONFIG_FILENAME = '.approved-licenses.yml'
+const strip = require('strip-ansi')
+const escapes = require('ansi-escapes')
 
 // 
 // Helper functions and data to simulate user CLI interaction.
@@ -59,15 +61,12 @@ const invalidLicensesConfig = [
 ].join('\n')
 
 function yes(cp) {
-  cp.stdin.write(`${inputKey.down}\n`)
+  cp.stdin.write(`${escapes.cursorDown()}\n`)
 }
 
 function saveAndQuit(cp) {
-  cp.stdin.write(`${inputKey.down}`)
-  // setTimeout(() => {
-  //   console.log('===== Running');
-  //   cp.stdin.write(`${inputKey.down}\n`)
-  // }, 4000)
+  cp.stdin.write(`${escapes.cursorDown()}`)
+  cp.stdin.write(`${escapes.cursorDown()}\n`)
 }
 
 function no(cp) {
@@ -225,34 +224,26 @@ describe('integration tests: validates interactive mode', () => {
     await restore()
   })
 
-  it('should be able to aasdlfjasdlfkjasdflk pprove all licenses', (done) => {
+  it('should be able to save and quit', (done) => {
     // Write a file that should be missing 2 licenses
     fs.writeFileSync(CONFIG_FILENAME, invalidLicensesConfig)
     const cp = spawn('./index.js', ['-i'])
     let promptCount = 0
     cp.stdout.on('data', data => {
-      process.stdout.write(JSON.stringify(data.toString('utf8')))
-      process.stdout.write('\n')
       if (isAllowLicensePrompt(data)) {
+        promptCount++
         // First license, approve
-        if (promptCount === 0) {
-          console.log('==== SAY YES');
+        if (promptCount === 1) {
           yes(cp)
         }
         // Second license, save/quit
-        if (promptCount === 1) {
-          console.log('==== SAVE AND QUIT');
+        if (promptCount === 2) {
           saveAndQuit(cp)
-
-          setTimeout(() => {
-            saveAndQuit(cp)
-            // cp.stdin.write('\n')
-          }, 4000);
         }
-        promptCount++
-        console.log('==== count is at ', promptCount);
       }
-
+      if (isModifyModulesPrompt(data)) {
+          no(cp)
+      }
     })
     cp.on('error', err => {
       console.log(err);
