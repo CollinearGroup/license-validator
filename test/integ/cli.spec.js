@@ -10,16 +10,6 @@ const CONFIG_FILENAME = '.approved-licenses.yml'
 const strip = require('strip-ansi')
 const escapes = require('ansi-escapes')
 
-// 
-// Helper functions and data to simulate user CLI interaction.
-// 
-const inputKey = {
-  up: "\\027[A",
-  down: "\\027[B",
-  left: "\\027[D",
-  right: "\\027[C",
-}
-
 // This should not only be the current config checked into git, but also
 // an example of valid config file.
 const expectedCurrentConfigFile = [
