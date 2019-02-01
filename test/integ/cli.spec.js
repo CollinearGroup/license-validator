@@ -7,16 +7,8 @@ const {
 } = require('child_process')
 const fs = require('fs-extra')
 const CONFIG_FILENAME = '.approved-licenses.yml'
-
-// 
-// Helper functions and data to simulate user CLI interaction.
-// 
-const inputKey = {
-  up: "\\027[A",
-  down: "\\027[B",
-  left: "\\027[D",
-  right: "\\027[C",
-}
+const strip = require('strip-ansi')
+const escapes = require('ansi-escapes')
 
 // This should not only be the current config checked into git, but also
 // an example of valid config file.
@@ -47,15 +39,30 @@ const invalidModuleConfig = [
   '',
 ].join('\n')
 
+const invalidLicensesConfig = [
+  'licenses:',
+  '  - ISC',
+  '  - MIT',
+  '  - BSD-2-Clause',
+  '  - BSD-3-Clause',
+  '  - Apache-2.0',
+  'modules: []',
+  '',
+].join('\n')
+
 function yes(cp) {
-  cp.stdin.write(`${inputKey.down}\n`)
+  cp.stdin.write(`${escapes.cursorDown()}\n`)
 }
 
-function no({
-  write
-}) {
-  write(`\n`)
+function saveAndQuit(cp) {
+  cp.stdin.write(`${escapes.cursorDown()}`)
+  cp.stdin.write(`${escapes.cursorDown()}\n`)
 }
+
+function no(cp) {
+  cp.stdin.write(`\n`)
+}
+
 
 function isAllowLicensePrompt(buffer) {
   return !!( // caste to boolean
@@ -138,6 +145,9 @@ describe('integration test: validates current repo is in a valid state', () => {
       'UNAPPROVED:',
       '  None',
       '',
+      'UNPROCESSED:',
+      '  None',
+      '',
       '',
     ].join('\n')
     const {
@@ -203,6 +213,54 @@ describe('integration tests: validates interactive mode', () => {
   after(async () => {
     await restore()
   })
+
+  it('should be able to save and quit', (done) => {
+    // Write a file that should be missing 2 licenses
+    fs.writeFileSync(CONFIG_FILENAME, invalidLicensesConfig)
+    const cp = spawn('./index.js', ['-i'])
+    let promptCount = 0
+    cp.stdout.on('data', data => {
+      if (isAllowLicensePrompt(data)) {
+        promptCount++
+        // First license, approve
+        if (promptCount === 1) {
+          yes(cp)
+        }
+        // Second license, save/quit
+        if (promptCount === 2) {
+          saveAndQuit(cp)
+        }
+      }
+      if (isModifyModulesPrompt(data)) {
+          no(cp)
+      }
+    })
+    cp.on('error', err => {
+      console.log(err);
+      expect.fail()
+    })
+    cp.on('close', () => {
+      fs.readFile(CONFIG_FILENAME, 'utf8').then(data => {
+        expect(data).to.equal([
+          'licenses:',
+          '  - ISC',
+          '  - MIT',
+          '  - BSD-2-Clause',
+          '  - BSD-3-Clause',
+          '  - Apache-2.0',
+          '  - CC-BY-3.0', // approved
+          // '  - CC0-1.0',// save/quit before any action taken
+          'modules: []',
+          '',
+        ].join('\n'))
+        done()
+      }).catch(err => {
+        console.log(err);
+        done(err)
+      })
+    })
+  }).timeout(10000)
+
 
   it('should be able to approve all licenses', (done) => {
     fs.removeSync(CONFIG_FILENAME)
