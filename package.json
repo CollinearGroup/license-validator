@@ -4,7 +4,7 @@
   "description": "Validates open source licenses for your project.",
   "main": "index.js",
   "scripts": {
-    "eslint": "eslint src/** --fix",
+    "eslint": "eslint index.js src/** --fix",
     "test": "nyc mocha --recursive",
     "coverage-html": "nyc report --reporter=html; open coverage/index.html",
     "report-coverage": "nyc report --reporter=text-lcov | coveralls"
