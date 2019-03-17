@@ -2,7 +2,6 @@ const { expect } = require("chai")
 const { spawnSync, spawn } = require("child_process")
 const fs = require("fs-extra")
 const CONFIG_FILENAME = ".approved-licenses.yml"
-const strip = require("strip-ansi")
 const escapes = require("ansi-escapes")
 
 // This should not only be the current config checked into git, but also
@@ -123,7 +122,7 @@ describe("integration test: validates current repo is in a valid state", () => {
       "Based on your .approved-licenses.yml config file, all your dependencies' licenses are valid.\n"
     const { stdout } = spawnSync("./index.js")
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
-  })
+  }).timeout(10000)
 
   it("should print summary", async () => {
     const expectedResult = [
@@ -148,8 +147,8 @@ describe("integration test: validates current repo is in a valid state", () => {
     ].join("\n")
     const { stdout } = spawnSync("./index.js", ["--summary"])
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
-  })
-}).timeout(10000)
+  }).timeout(10000)
+})
 
 describe("integration test: validates bad files are cleanly handled", () => {
   before(async () => {
