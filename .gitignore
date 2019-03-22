@@ -62,4 +62,6 @@ typings/
 
 .vscode
 
+built
+
 tmp

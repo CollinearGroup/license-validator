@@ -14,7 +14,7 @@ const {
   getUserModulesInput,
   writeConfig,
   prettySummary
-} = require("./src/checker")
+} = require("./built/checker")
 
 program
   .version(pkg.version, "-v, --version")
