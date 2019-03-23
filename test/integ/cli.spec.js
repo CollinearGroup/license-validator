@@ -165,7 +165,7 @@ describe("integration test: validates bad files are cleanly handled", () => {
     expect(stdout.toString("utf-8")).to.match(
       /Approved license list is empty. Run with option -i to generate a config file./
     )
-  })
+  }).timeout(10000)
 
   it("should error on bad files", async () => {
     // No file
