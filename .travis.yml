@@ -12,3 +12,5 @@ deploy:
   on:
     tags: true
     repo: CollinearGroup/license-validator
+notifications:
+  webhooks: https://outlook.office.com/webhook/1dc2fc03-4a73-44e5-b48a-65be355505f3@48b2d8b4-e0d1-42c7-9e65-8752de35e36e/TravisCI/6937f297211645ce8bda9f2b9b609f0f/d021736f-cd02-443a-89af-e14772cbcd07
