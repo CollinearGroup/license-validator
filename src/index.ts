@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-const _ = require("lodash")
+import _ = require("lodash")
 const fs = require("fs-extra")
 const program = require("commander")
 const treeify = require("treeify")
-const pkg = require("./package")
-const {
+const pkg = require("../package")
+import {
   loadConfig,
   summary,
   getInvalidModuleDependencyTree,
@@ -14,7 +14,7 @@ const {
   getUserModulesInput,
   writeConfig,
   prettySummary
-} = require("./built/checker")
+} from "./checker"
 
 program
   .version(pkg.version, "-v, --version")
@@ -43,7 +43,7 @@ program.action(async args => {
   if (args.interactive) {
     const yamlObj = await getAndValidateConfig(fileName)
     if (!args.modulesOnly) {
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)
+      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
     }
     yamlObj.modules = await getUserModulesInput(
       yamlObj.licenses,

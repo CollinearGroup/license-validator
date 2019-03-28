@@ -6,8 +6,7 @@
   "scripts": {
     "eslint": "eslint index.js src/** --fix",
     "release": "standard-version",
-    "test": "nyc mocha --recursive",
-    "coverage-html": "nyc report --reporter=html; open coverage/index.html",
+    "test": "nyc mocha",
     "report-coverage": "nyc report --reporter=text-lcov | coveralls"
   },
   "husky": {
@@ -17,6 +16,23 @@
   },
   "bin": {
     "license-validator": "index.js"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "include": [
+      "src"
+    ],
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "require": [
+      "ts-node/register",
+      "source-map-support/register"
+    ],
+    "all": true
   },
   "repository": {
     "type": "git",
@@ -51,6 +67,7 @@
     "@types/js-yaml": "^3.12.0",
     "@types/license-checker": "^25.0.0",
     "@types/lodash": "^4.14.123",
+    "@types/mocha": "^5.2.6",
     "@types/node": "^11.11.6",
     "@types/treeify": "^1.0.0",
     "ansi-escapes": "^3.1.0",
@@ -64,7 +81,10 @@
     "nyc": "^13.3.0",
     "prettier": "^1.16.4",
     "rewire": "^4.0.1",
+    "source-map-support": "^0.5.11",
     "standard-version": "^5.0.1",
-    "strip-ansi": "^5.0.0"
+    "strip-ansi": "^5.0.0",
+    "ts-node": "^8.0.3",
+    "typescript": "^3.3.4000"
   }
 }

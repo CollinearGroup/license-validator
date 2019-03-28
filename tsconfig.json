@@ -1,10 +1,16 @@
 {
   "compilerOptions": {
-      "outDir": "./built",
-      "allowJs": true,
-      "target": "es5"
+    "removeComments": false,
+    "outDir": "./built",
+    "allowJs": true,
+    "target": "es5",
+    "sourceMap": true,
+    "types": [
+      "node",
+      "mocha"
+    ]
   },
   "include": [
-      "./src/**/*"
+    "src"
   ]
 }

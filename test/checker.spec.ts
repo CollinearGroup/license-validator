@@ -1,4 +1,4 @@
-const { expect } = require("chai")
+import { expect } from "chai"
 const { stringify } = JSON
 const rewire = require("rewire")
 const { EventEmitter } = require("events")
@@ -6,7 +6,7 @@ const { EventEmitter } = require("events")
 describe("#loadConfig", () => {
   let checker
   before(() => {
-    checker = rewire("../built/checker.js")
+    checker = rewire("../src/checker.ts")
   })
   it("should throw error if no config file found", () => {
     expect(checker.loadConfig).to.throw
@@ -78,7 +78,7 @@ describe("#loadConfig", () => {
 
 describe("#getAndValidateConfig", () => {
   it("should load an existing config or return new baseline config", async () => {
-    const checker = rewire("../built/checker.js")
+    const checker = rewire("../src/checker.ts")
     // Test when file does not exist
     checker.__set__("fs", {
       pathExists: async () => false
@@ -106,7 +106,7 @@ describe("#getAndValidateConfig", () => {
 
 describe("#getDepTree", () => {
   it("should return json dependency tree", async () => {
-    let checker = rewire("../built/checker.js")
+    let checker = rewire("../src/checker.ts")
     let stdout = stringify({
       name: "arrsome-module",
       dependencies: {
@@ -141,7 +141,7 @@ describe("#getDepTree", () => {
 
 describe("#getDependencies", () => {
   it("should return module-license map", async () => {
-    let checker = rewire("../built/checker.js")
+    let checker = rewire("../src/checker.ts")
     checker.__set__("init", async () => {
       return {
         mockResult: true
@@ -156,7 +156,7 @@ describe("#getDependencies", () => {
 
 describe("#getUserModulesInput", () => {
   it("should request and return approved modules", async () => {
-    const checker = rewire("../built/checker.js")
+    const checker = rewire("../src/checker.ts")
     checker.__set__(
       "getUnallowedDependencies",
       checker.getUnallowedDependencies
@@ -179,7 +179,7 @@ describe("#getUserModulesInput", () => {
     })
 
     // Test I do not want to modify the list.
-    let answers = [{ confirmKey: "N" }]
+    let answers = [{ confirmKey: "N" }] as any[]
     checker.__set__("inquirer", {
       prompt: async () => {
         return answers.shift()
@@ -210,11 +210,11 @@ describe("#getUserModulesInput", () => {
 
 describe("#writeConfig", () => {
   it("should write the config to yaml", async () => {
-    const checker = rewire("../built/checker.js")
+    const checker = rewire("../src/checker.ts")
     let calledArguments
     checker.__set__("fs", {
       writeFile: async function(path, config) {
-        calledArguments = arguments
+        calledArguments = [path, config]
       }
     })
 
@@ -230,7 +230,7 @@ describe("#writeConfig", () => {
 
 describe("#getInvalidModules", () => {
   it("should return undefined when no invalid modules", () => {
-    const checker = require("../built/checker")
+    const checker = require("../src/checker.ts")
     const modulesList = {
       "module@1.0.0": {
         licenses: "MIT"
@@ -239,7 +239,7 @@ describe("#getInvalidModules", () => {
     // Tests license whitelisting
     let config = {
       licenses: ["MIT"]
-    }
+    } as any
     let result = checker.getInvalidModules(modulesList, config)
     expect(result).to.be.undefined
 
@@ -252,7 +252,7 @@ describe("#getInvalidModules", () => {
   })
 
   it("should return module details when it is invalid", () => {
-    const checker = require("../built/checker")
+    const checker = require("../src/checker.ts")
     const modulesList = {
       "module@1.0.0": {
         licenses: "MIT",
