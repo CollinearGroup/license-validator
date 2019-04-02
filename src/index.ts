@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import _ = require("lodash")
-const fs = require("fs-extra")
-const program = require("commander")
-const treeify = require("treeify")
-const pkg = require("../package")
+import * as _ from "lodash"
+import * as fs from "fs-extra"
+import * as treeify from "treeify"
+let program = require("commander")
+let pkg = fs.readJsonSync("./package.json")
+
 import {
   loadConfig,
   summary,
@@ -52,7 +53,7 @@ program.action(async args => {
     await writeConfig(fileName, yamlObj)
   }
 
-  const fileExists = await fs.exists(fileName)
+  const fileExists = await fs.pathExists(fileName)
   if (!fileExists) {
     console.log(
       `Config file ${fileName} not found. Run with option -i to generate a config file.`
@@ -69,14 +70,14 @@ program.action(async args => {
     process.exit(1)
   }
 
-  const depTree = await getInvalidModuleDependencyTree(parsedConfig)
+  const depTree = await getInvalidModuleDependencyTree(parsedConfig) as any
 
   if (!_.isEmpty(depTree)) {
     let summaryMap = await summary(fileName)
     let prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     console.log(`UNAPPROVED MODULES:`)
-    console.log(treeify.asTree(depTree, true))
+    console.log(treeify.asTree(depTree, true, false))
     process.exit(1)
   }
 

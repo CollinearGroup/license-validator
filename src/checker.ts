@@ -1,11 +1,11 @@
-import _ = require("lodash")
-import inquirer = require("inquirer")
+import * as _ from "lodash"
+let inquirer = require("inquirer")
 import { promisify } from "util"
 
 let { parse } = JSON
 
-import fs = require("fs-extra")
-import treeify = require("treeify")
+let fs = require("fs-extra")
+let treeify = require("treeify")
 import { init as lcInit } from "license-checker"
 let init = promisify(lcInit)
 
