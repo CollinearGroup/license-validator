@@ -1,8 +1,8 @@
 import { expect } from "chai"
-import { spawnSync, spawn} from "child_process"
-const fs = require("fs-extra")
+import { spawnSync, spawn, execSync} from "child_process"
+import fs = require("fs-extra")
 const CONFIG_FILENAME = ".approved-licenses.yml"
-const escapes = require("ansi-escapes")
+import escapes = require("ansi-escapes")
 
 // This should not only be the current config checked into git, but also
 // an example of valid config file.
@@ -104,7 +104,7 @@ async function restore() {
 // Since many of these spawn processes and do I/O most need large timeouts.
 //
 
-xdescribe("integration test: validates current repo is in a valid state", () => {
+describe("integration test: validates current repo is in a valid state", () => {
   before(async () => {
     await stash(expectedCurrentConfigFile)
   })
@@ -115,12 +115,12 @@ xdescribe("integration test: validates current repo is in a valid state", () => 
 
   it("should have valid config file", async () => {
     // Tests current state
-    const fileExists = await fs.exists("./.approved-licenses.yml")
+    const fileExists = await fs.pathExists("./.approved-licenses.yml")
     expect(fileExists).to.be.true
 
     const expectedResult =
       "Based on your .approved-licenses.yml config file, all your dependencies' licenses are valid.\n"
-    let { stdout } = spawnSync("ts-node", ["./src/index.ts"], {})
+    let stdout = execSync(`ts-node ./src/index.ts`)
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
   }).timeout(10000)
 
@@ -150,7 +150,7 @@ xdescribe("integration test: validates current repo is in a valid state", () => 
   }).timeout(10000)
 })
 
-xdescribe("integration test: validates bad files are cleanly handled", () => {
+describe("integration test: validates bad files are cleanly handled", () => {
   before(async () => {
     await stash()
   })
@@ -194,7 +194,7 @@ xdescribe("integration test: validates bad files are cleanly handled", () => {
   }).timeout(10000)
 })
 
-xdescribe("integration tests: validates interactive mode", () => {
+describe("integration tests: validates interactive mode", () => {
   before(async () => {
     await stash()
   })

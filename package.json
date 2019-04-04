@@ -28,11 +28,6 @@
       "text",
       "html"
     ],
-    "require": [
-      "ts-node/register",
-      "source-map-support/register"
-    ],
-    "cache": false,
     "all": true
   },
   "repository": {
@@ -63,6 +58,8 @@
   "devDependencies": {
     "@commitlint/cli": "^7.5.2",
     "@commitlint/config-conventional": "^7.5.0",
+    "@types/ansi-escapes": "^3.0.1",
+    "@types/chai": "^4.1.7",
     "@types/commander": "^2.12.2",
     "@types/fs-extra": "^5.0.5",
     "@types/inquirer": "0.0.44",
@@ -70,7 +67,7 @@
     "@types/license-checker": "^25.0.0",
     "@types/lodash": "^4.14.123",
     "@types/mocha": "^5.2.6",
-    "@types/node": "^11.11.6",
+    "@types/node": "^11.13.0",
     "@types/treeify": "^1.0.0",
     "ansi-escapes": "^3.1.0",
     "chai": "^4.2.0",
