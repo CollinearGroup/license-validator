@@ -15,7 +15,7 @@
     }
   },
   "bin": {
-    "license-validator": "index.js"
+    "license-validator": "built/index.js"
   },
   "nyc": {
     "extension": [
