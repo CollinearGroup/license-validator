@@ -122,7 +122,7 @@ describe("integration test: validates current repo is in a valid state", () => {
       "Based on your .approved-licenses.yml config file, all your dependencies' licenses are valid.\n"
     let stdout = execSync(`ts-node ./src/index.ts`)
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should print summary", async () => {
     const expectedResult = [
@@ -147,7 +147,7 @@ describe("integration test: validates current repo is in a valid state", () => {
     ].join("\n")
     let { stdout } = spawnSync("ts-node", ["./src/index.ts", "--summary"], {})
     expect(stdout.toString('utf8')).to.equal(expectedResult)
-  }).timeout(10000)
+  }).timeout(20000)
 })
 
 describe("integration test: validates bad files are cleanly handled", () => {
@@ -165,7 +165,7 @@ describe("integration test: validates bad files are cleanly handled", () => {
     expect(stdout).to.match(
       /Approved license list is empty. Run with option -i to generate a config file./
     )
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should error on bad files", async () => {
     // No file
@@ -182,7 +182,7 @@ describe("integration test: validates bad files are cleanly handled", () => {
     )
     const { stdout: emptyConfigResult } = spawnSync("ts-node", ["./src/index.ts"], {})
     expect(emptyConfigResult.toString("utf-8")).to.match(/APPROVED:\n\s+None/)
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should error on invalid yml", async () => {
     await fs.writeFile(CONFIG_FILENAME, "")
@@ -191,7 +191,7 @@ describe("integration test: validates bad files are cleanly handled", () => {
     expect(stderr.toString("utf-8")).to.equal(
       "Configuration file found but it is empty.\n"
     )
-  }).timeout(10000)
+  }).timeout(20000)
 })
 
 describe("integration tests: validates interactive mode", () => {
@@ -252,7 +252,7 @@ describe("integration tests: validates interactive mode", () => {
           done(err)
         })
     })
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should be able to approve all licenses", done => {
     fs.removeSync(CONFIG_FILENAME)
@@ -290,7 +290,7 @@ describe("integration tests: validates interactive mode", () => {
           done(err)
         })
     })
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should validate by module", done => {
     fs.writeFileSync(CONFIG_FILENAME, invalidModuleConfig)
@@ -329,5 +329,5 @@ describe("integration tests: validates interactive mode", () => {
         })
         .catch(done)
     })
-  }).timeout(10000)
+  }).timeout(20000)
 })
