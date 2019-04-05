@@ -70,7 +70,7 @@ program.action(async args => {
     process.exit(1)
   }
 
-  const depTree = await getInvalidModuleDependencyTree(parsedConfig) as any
+  const depTree = (await getInvalidModuleDependencyTree(parsedConfig)) as any
 
   if (!_.isEmpty(depTree)) {
     let summaryMap = await summary(fileName)
