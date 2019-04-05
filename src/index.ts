@@ -3,7 +3,7 @@
 import * as _ from "lodash"
 import * as fs from "fs-extra"
 import * as treeify from "treeify"
-let program = require("commander")
+import program = require("commander")
 let pkg = fs.readJsonSync("./package.json")
 
 import {
@@ -27,7 +27,7 @@ program
   )
 
 // Default Action
-program.action(async args => {
+async function action(args: program.Command): Promise<void> {
   let fileName = ".approved-licenses.yml"
   if (args.summary) {
     let summaryMap = await summary(fileName)
@@ -84,6 +84,8 @@ program.action(async args => {
   console.log(
     `Based on your ${fileName} config file, all your dependencies' licenses are valid.`
   )
-})
+}
+
+program.action(action)
 
 program.parse(process.argv)
