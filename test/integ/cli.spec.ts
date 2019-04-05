@@ -1,5 +1,5 @@
 import { expect } from "chai"
-import { spawnSync, spawn, execSync} from "child_process"
+import { spawnSync, spawn, execSync } from "child_process"
 import fs = require("fs-extra")
 const CONFIG_FILENAME = ".approved-licenses.yml"
 import escapes = require("ansi-escapes")
@@ -146,7 +146,7 @@ describe("integration test: validates current repo is in a valid state", () => {
       ""
     ].join("\n")
     let { stdout } = spawnSync("ts-node", ["./src/index.ts", "--summary"], {})
-    expect(stdout.toString('utf8')).to.equal(expectedResult)
+    expect(stdout.toString("utf8")).to.equal(expectedResult)
   }).timeout(20000)
 })
 
@@ -170,7 +170,11 @@ describe("integration test: validates bad files are cleanly handled", () => {
   it("should error on bad files", async () => {
     // No file
     await fs.remove(CONFIG_FILENAME)
-    const { stdout: noFileResult } = spawnSync("ts-node", ["./src/index.ts"], {})
+    const { stdout: noFileResult } = spawnSync(
+      "ts-node",
+      ["./src/index.ts"],
+      {}
+    )
     expect(noFileResult.toString("utf-8")).to.equal(
       "Config file .approved-licenses.yml not found. Run with option -i to generate a config file.\n"
     )
@@ -180,7 +184,11 @@ describe("integration test: validates bad files are cleanly handled", () => {
       CONFIG_FILENAME,
       [`licenses: []`, `modules: []`].join("\n")
     )
-    const { stdout: emptyConfigResult } = spawnSync("ts-node", ["./src/index.ts"], {})
+    const { stdout: emptyConfigResult } = spawnSync(
+      "ts-node",
+      ["./src/index.ts"],
+      {}
+    )
     expect(emptyConfigResult.toString("utf-8")).to.match(/APPROVED:\n\s+None/)
   }).timeout(20000)
 

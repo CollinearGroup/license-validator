@@ -117,10 +117,14 @@ describe("#getDepTree", () => {
     })
     let stdoutStream = new EventEmitter()
     let cp = new EventEmitter()
-    checker.__set__("exec", () => {
+    let exec = function() {
       cp.stdout = stdoutStream
       return cp
-    })
+    }
+    let childProcess = {
+      exec
+    }
+    checker.__set__("childProcess", childProcess)
     // Setup listener
     const promise = checker.getDepTree()
     // emit expected events

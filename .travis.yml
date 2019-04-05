@@ -2,8 +2,8 @@ language: node_js
 node_js:
   - node
 script:
-  - npm test
   - npm run eslint
+  - npm test
   - npm run report-coverage
 deploy:
   provider: npm

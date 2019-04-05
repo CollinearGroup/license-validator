@@ -4,7 +4,9 @@ import { promisify } from "util"
 import fs = require("fs-extra")
 import treeify = require("treeify")
 import { init as lcInit } from "license-checker"
-import { exec } from "child_process"
+// import { exec } from "child_process"
+import childProcess = require("child_process")
+// import * as childProcess from "child_process"
 import { safeLoad, safeDump } from "js-yaml"
 let { parse } = JSON
 let init = promisify(lcInit)
@@ -144,7 +146,7 @@ export async function getDepTree() {
   let result = ""
   // https://nodejs.org/api/child_process.html#child_process_maxbuffer_and_unicode
   // It won't throw an error (except in sync mode) it just kills the process...
-  const cp = exec("npm list --json", {
+  const cp = childProcess.exec("npm list --json", {
     maxBuffer: 1024 * 1024 * 2
   })
   cp.stdout.on("data", data => (result += data))
