@@ -213,13 +213,10 @@ describe("integration tests: validates interactive mode", () => {
 
   it("should be able to save and quit", done => {
     // Write a file that should be missing 2 licenses
-    console.log("starting")
     fs.writeFileSync(CONFIG_FILENAME, invalidLicensesConfig)
     const cp = spawn("ts-node", ["./src/index.ts", "-i"])
-    console.log("spawned")
     let promptCount = 0
     cp.stdout.on("data", data => {
-      console.log(data.toString("utf8"))
       if (isAllowLicensePrompt(data)) {
         promptCount++
         // First license, approve
@@ -264,7 +261,7 @@ describe("integration tests: validates interactive mode", () => {
           done(err)
         })
     })
-  }).timeout(20000)
+  }).timeout(30000)
 
   it("should be able to approve all licenses", done => {
     fs.removeSync(CONFIG_FILENAME)
