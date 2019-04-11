@@ -1,9 +1,10 @@
 language: node_js
 node_js:
-- node
+  - node
 script:
-- npm test
-- npm run report-coverage
+  - npm run eslint
+  - npm test
+  - npm run report-coverage
 deploy:
   provider: npm
   email: dvilla@collineargroup.com

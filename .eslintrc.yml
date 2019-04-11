@@ -1,10 +1,15 @@
-extends: 'eslint:recommended'
+parser: "@typescript-eslint/parser"
+extends:
+  - "plugin:@typescript-eslint/recommended"
+  - prettier
+  - "prettier/@typescript-eslint"
 env:
   es6: true
   node: true
 parserOptions:
   ecmaVersion: 9
 plugins:
+  - "@typescript-eslint"
   - prettier
 rules:
   prettier/prettier: error

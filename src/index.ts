@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-const _ = require("lodash")
-const fs = require("fs-extra")
-const program = require("commander")
-const treeify = require("treeify")
-const pkg = require("./package")
-const {
+import * as _ from "lodash"
+import * as fs from "fs-extra"
+import * as treeify from "treeify"
+import program = require("commander")
+let pkg = fs.readJsonSync("./package.json")
+
+import {
   loadConfig,
   summary,
   getInvalidModuleDependencyTree,
@@ -14,7 +15,7 @@ const {
   getUserModulesInput,
   writeConfig,
   prettySummary
-} = require("./src/checker")
+} from "./checker"
 
 program
   .version(pkg.version, "-v, --version")
@@ -26,7 +27,7 @@ program
   )
 
 // Default Action
-program.action(async args => {
+async function action(args: program.Command): Promise<void> {
   let fileName = ".approved-licenses.yml"
   if (args.summary) {
     let summaryMap = await summary(fileName)
@@ -43,7 +44,7 @@ program.action(async args => {
   if (args.interactive) {
     const yamlObj = await getAndValidateConfig(fileName)
     if (!args.modulesOnly) {
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses, fileName)
+      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
     }
     yamlObj.modules = await getUserModulesInput(
       yamlObj.licenses,
@@ -52,7 +53,7 @@ program.action(async args => {
     await writeConfig(fileName, yamlObj)
   }
 
-  const fileExists = await fs.exists(fileName)
+  const fileExists = await fs.pathExists(fileName)
   if (!fileExists) {
     console.log(
       `Config file ${fileName} not found. Run with option -i to generate a config file.`
@@ -69,20 +70,22 @@ program.action(async args => {
     process.exit(1)
   }
 
-  const depTree = await getInvalidModuleDependencyTree(parsedConfig)
+  const depTree = (await getInvalidModuleDependencyTree(parsedConfig)) as any
 
   if (!_.isEmpty(depTree)) {
     let summaryMap = await summary(fileName)
     let prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     console.log(`UNAPPROVED MODULES:`)
-    console.log(treeify.asTree(depTree, true))
+    console.log(treeify.asTree(depTree, true, false))
     process.exit(1)
   }
 
   console.log(
     `Based on your ${fileName} config file, all your dependencies' licenses are valid.`
   )
-})
+}
+
+program.action(action)
 
 program.parse(process.argv)

@@ -1,8 +1,8 @@
-const { expect } = require("chai")
-const { spawnSync, spawn } = require("child_process")
-const fs = require("fs-extra")
+import { expect } from "chai"
+import { spawnSync, spawn, execSync } from "child_process"
+import fs = require("fs-extra")
 const CONFIG_FILENAME = ".approved-licenses.yml"
-const escapes = require("ansi-escapes")
+import escapes = require("ansi-escapes")
 
 // This should not only be the current config checked into git, but also
 // an example of valid config file.
@@ -86,12 +86,12 @@ function isAllowModulePrompt(buffer) {
 }
 
 // Allows the integration test to run on this repo's package.json and installed modules.
-async function stash(fileContents) {
+async function stash(fileContents = null) {
   await fs.remove("./tmp")
   await fs.ensureDir("./tmp")
   await fs.copy(`${CONFIG_FILENAME}`, `tmp/${CONFIG_FILENAME}`)
 
-  if (fileContents) {
+  if (fileContents === null) {
     await fs.writeFile(CONFIG_FILENAME, fileContents)
   }
 }
@@ -115,14 +115,14 @@ describe("integration test: validates current repo is in a valid state", () => {
 
   it("should have valid config file", async () => {
     // Tests current state
-    const fileExists = await fs.exists("./.approved-licenses.yml")
+    const fileExists = await fs.pathExists("./.approved-licenses.yml")
     expect(fileExists).to.be.true
 
     const expectedResult =
       "Based on your .approved-licenses.yml config file, all your dependencies' licenses are valid.\n"
-    const { stdout } = spawnSync("./index.js")
+    let stdout = execSync(`ts-node ./src/index.ts`)
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should print summary", async () => {
     const expectedResult = [
@@ -145,9 +145,9 @@ describe("integration test: validates current repo is in a valid state", () => {
       "",
       ""
     ].join("\n")
-    const { stdout } = spawnSync("./index.js", ["--summary"])
-    expect(stdout.toString("utf-8")).to.equal(expectedResult)
-  }).timeout(10000)
+    let { stdout } = spawnSync("ts-node", ["./src/index.ts", "--summary"], {})
+    expect(stdout.toString("utf8")).to.equal(expectedResult)
+  }).timeout(20000)
 })
 
 describe("integration test: validates bad files are cleanly handled", () => {
@@ -161,16 +161,20 @@ describe("integration test: validates bad files are cleanly handled", () => {
 
   it("should warn when approved list is empty", async () => {
     await fs.writeFile(CONFIG_FILENAME, "licenses: []\nmodules: []\n")
-    const { stdout } = spawnSync("./index.js", ["--summary"])
-    expect(stdout.toString("utf-8")).to.match(
+    let { stdout } = spawnSync("ts-node", ["./src/index.ts", "--summary"], {})
+    expect(stdout).to.match(
       /Approved license list is empty. Run with option -i to generate a config file./
     )
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should error on bad files", async () => {
     // No file
     await fs.remove(CONFIG_FILENAME)
-    const { stdout: noFileResult } = spawnSync("./index.js")
+    const { stdout: noFileResult } = spawnSync(
+      "ts-node",
+      ["./src/index.ts"],
+      {}
+    )
     expect(noFileResult.toString("utf-8")).to.equal(
       "Config file .approved-licenses.yml not found. Run with option -i to generate a config file.\n"
     )
@@ -180,18 +184,22 @@ describe("integration test: validates bad files are cleanly handled", () => {
       CONFIG_FILENAME,
       [`licenses: []`, `modules: []`].join("\n")
     )
-    const { stdout: emptyConfigResult } = spawnSync("./index.js")
+    const { stdout: emptyConfigResult } = spawnSync(
+      "ts-node",
+      ["./src/index.ts"],
+      {}
+    )
     expect(emptyConfigResult.toString("utf-8")).to.match(/APPROVED:\n\s+None/)
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should error on invalid yml", async () => {
     await fs.writeFile(CONFIG_FILENAME, "")
-    const { stdout, stderr } = spawnSync("./index.js")
+    const { stdout, stderr } = spawnSync("ts-node", ["./src/index.ts"], {})
     expect(stdout.toString("utf-8")).to.equal("")
     expect(stderr.toString("utf-8")).to.equal(
       "Configuration file found but it is empty.\n"
     )
-  }).timeout(10000)
+  }).timeout(20000)
 })
 
 describe("integration tests: validates interactive mode", () => {
@@ -206,7 +214,7 @@ describe("integration tests: validates interactive mode", () => {
   it("should be able to save and quit", done => {
     // Write a file that should be missing 2 licenses
     fs.writeFileSync(CONFIG_FILENAME, invalidLicensesConfig)
-    const cp = spawn("./index.js", ["-i"])
+    const cp = spawn("ts-node", ["./src/index.ts", "-i"])
     let promptCount = 0
     cp.stdout.on("data", data => {
       if (isAllowLicensePrompt(data)) {
@@ -227,6 +235,7 @@ describe("integration tests: validates interactive mode", () => {
     cp.on("error", err => {
       console.log(err)
       expect.fail()
+      done(err)
     })
     cp.on("close", () => {
       fs.readFile(CONFIG_FILENAME, "utf8")
@@ -252,11 +261,11 @@ describe("integration tests: validates interactive mode", () => {
           done(err)
         })
     })
-  }).timeout(10000)
+  }).timeout(30000)
 
   it("should be able to approve all licenses", done => {
     fs.removeSync(CONFIG_FILENAME)
-    const cp = spawn("./index.js", ["-i"])
+    const cp = spawn("ts-node", ["./src/index.ts", "-i"])
     cp.stdout.on("data", data => {
       if (isAllowLicensePrompt(data)) {
         yes(cp)
@@ -290,11 +299,11 @@ describe("integration tests: validates interactive mode", () => {
           done(err)
         })
     })
-  }).timeout(10000)
+  }).timeout(20000)
 
   it("should validate by module", done => {
     fs.writeFileSync(CONFIG_FILENAME, invalidModuleConfig)
-    const cp = spawn("./index.js", ["-i", "-m"])
+    const cp = spawn("ts-node", ["./src/index.ts", "-i", "-m"])
     cp.stdout.on("data", data => {
       if (isModifyModulesPrompt(data)) {
         yes(cp)
@@ -329,5 +338,5 @@ describe("integration tests: validates interactive mode", () => {
         })
         .catch(done)
     })
-  }).timeout(10000)
+  }).timeout(20000)
 })

@@ -1,38 +1,111 @@
-const _ = require("lodash")
-const inquirer = require("inquirer")
-const { promisify } = require("util")
+import * as _ from "lodash"
+import inquirer = require("inquirer")
+import { promisify } from "util"
+import fs = require("fs-extra")
+import treeify = require("treeify")
+import { init as lcInit } from "license-checker"
+// import { exec } from "child_process"
+import childProcess = require("child_process")
+// import * as childProcess from "child_process"
+import { safeLoad, safeDump } from "js-yaml"
+let { parse } = JSON
+let init = promisify(lcInit)
 
-const { parse } = JSON
+interface LicenseConfig {
+  licenses: string[]
+  modules: string[]
+}
 
-let fs = require("fs-extra")
-const treeify = require("treeify")
-let { init } = require("license-checker")
-init = promisify(init)
-
-let { exec } = require("child_process")
-
-const { safeLoad, safeDump } = require("js-yaml")
+interface PrunedNode {
+  licenses: any
+  version: string
+}
 
 const defaultLicenseInitOpts = {
   start: "./",
   production: true
 }
 
-module.exports.getAndValidateConfig = async configPath => {
-  const configExists = await fs.exists(configPath)
-  if (configExists) {
-    return this.loadConfig(configPath)
-  }
+// If it is not a string you have to specifically allow the module.
+export function canBeProcessed(licenseEntry) {
+  return typeof licenseEntry === "string"
+}
 
+export function isLicenseValidByConfig(configLicenses, license) {
+  return configLicenses.includes(license)
+}
+
+/**
+ * Get an object of total count of licenses
+ *
+ * Example return
+ * {
+ *   licenses: {
+ *     'GPL-2.0': 23
+ *   },
+ *   unprocessedLicenseEntries: {
+ *     'json-schema': ['BSD', 'AFLv2.1']
+ *   }
+ * }
+ */
+export async function generateLicensesMap() {
+  const opts = {
+    start: "./",
+    production: true,
+    summary: true
+  }
+  let dependencies = await init(opts)
+  let licenses = {}
+  let unprocessedLicenseEntries = {}
+  for (const name in dependencies) {
+    let dependency = dependencies[name]
+
+    // Should only handle licenses that follow the npm package.json recommendations
+    if (!canBeProcessed(dependency.licenses)) {
+      unprocessedLicenseEntries[name] = dependency.licenses
+      continue
+    }
+    let key = dependency.licenses.toString()
+    if (licenses[key]) {
+      licenses[key]++
+    } else {
+      licenses[key] = 1
+    }
+  }
   return {
-    licenses: [],
-    modules: []
+    licenses,
+    unprocessedLicenseEntries
   }
 }
 
+export function isModuleValidByConfig(configModules, moduleName) {
+  return configModules.includes(moduleName)
+}
+
+export async function getUnallowedDependencies(
+  existingLicenses,
+  existingModules,
+  dependencies
+) {
+  let unallowedDependencyMap = {}
+
+  for (let dependencyName in dependencies) {
+    let dependency = dependencies[dependencyName]
+    if (
+      !existingLicenses.includes(dependency.licenses) &&
+      !existingModules.includes(dependencyName)
+    ) {
+      unallowedDependencyMap[dependencyName] = dependency
+    }
+  }
+
+  return unallowedDependencyMap
+}
+
 // Simply loads the config file
-module.exports.loadConfig = async configPath => {
-  const config = safeLoad(await fs.readFile(configPath), {
+export async function loadConfig(configPath): Promise<LicenseConfig> {
+  let fileContents = await fs.readFile(configPath)
+  const config = safeLoad(fileContents.toString(), {
     filename: configPath
   })
   if (!config) {
@@ -49,19 +122,31 @@ module.exports.loadConfig = async configPath => {
   return config
 }
 
+export async function getAndValidateConfig(configPath): Promise<LicenseConfig> {
+  const configExists = await fs.pathExists(configPath)
+  if (configExists) {
+    return loadConfig(configPath)
+  }
+
+  return {
+    licenses: [],
+    modules: []
+  }
+}
+
 // Writes the config
-module.exports.writeConfig = async (configPath, configObject) => {
+export async function writeConfig(configPath, configObject) {
   let updatedConfig = safeDump(configObject)
   await fs.writeFile(configPath, updatedConfig)
 }
 
 // Builds the dependency tree of node modules.
-module.exports.getDepTree = async () => {
+export async function getDepTree() {
   // TODO: Prefer a programmatic way to do this, but performance matters.
   let result = ""
   // https://nodejs.org/api/child_process.html#child_process_maxbuffer_and_unicode
   // It won't throw an error (except in sync mode) it just kills the process...
-  const cp = exec("npm list --json", {
+  const cp = childProcess.exec("npm list --json", {
     maxBuffer: 1024 * 1024 * 2
   })
   cp.stdout.on("data", data => (result += data))
@@ -75,13 +160,13 @@ module.exports.getDepTree = async () => {
 
 // Runs license-checker to just the list of licenses in the format
 // that license-checker handles so we can safely call other functions like `asSummary`
-module.exports.getDependencies = async (opts = {}) => {
+export async function getDependencies(opts = {}) {
   return await init({ ...defaultLicenseInitOpts, ...opts })
 }
 
 // Updates existing licenses based on user input and existing dependencies
-module.exports.getUserLicenseInput = async existingLicenses => {
-  let { licenses: licenseMap } = await this.generateLicensesMap()
+export async function getUserLicenseInput(existingLicenses) {
+  let { licenses: licenseMap } = await generateLicensesMap()
   const approvedLicenses = [...existingLicenses]
   for (let licenseName in licenseMap) {
     if (!existingLicenses.includes(licenseName)) {
@@ -105,14 +190,11 @@ module.exports.getUserLicenseInput = async existingLicenses => {
   return approvedLicenses
 }
 
-module.exports.getUserModulesInput = async (
-  existingLicenses,
-  existingModules
-) => {
-  let dependencies = await this.getDependencies({
+export async function getUserModulesInput(existingLicenses, existingModules) {
+  let dependencies = await getDependencies({
     summary: true
   })
-  let unallowedDependencyMap = await this.getUnallowedDependencies(
+  let unallowedDependencyMap = await getUnallowedDependencies(
     existingLicenses,
     existingModules,
     dependencies
@@ -156,33 +238,13 @@ module.exports.getUserModulesInput = async (
   return approvedModules
 }
 
-module.exports.getUnallowedDependencies = async (
-  existingLicenses,
-  existingModules,
-  dependencies
-) => {
-  let unallowedDependencyMap = {}
-
-  for (let dependencyName in dependencies) {
-    let dependency = dependencies[dependencyName]
-    if (
-      !existingLicenses.includes(dependency.licenses) &&
-      !existingModules.includes(dependencyName)
-    ) {
-      unallowedDependencyMap[dependencyName] = dependency
-    }
-  }
-
-  return unallowedDependencyMap
-}
-
 // Shows all the licenses in use for each module.
-module.exports.summary = async filePath => {
-  const currentConfig = await this.getAndValidateConfig(filePath)
+export async function summary(filePath) {
+  const currentConfig = await getAndValidateConfig(filePath)
   let {
     licenses: licenseMap,
     unprocessedLicenseEntries
-  } = await this.generateLicensesMap()
+  } = await generateLicensesMap()
   let summary = {
     approved: {},
     unapproved: {},
@@ -198,16 +260,16 @@ module.exports.summary = async filePath => {
   return summary
 }
 
-module.exports.prettySummary = summary => {
+export function prettySummary(summary) {
   let approvedTree = _.isEmpty(summary.approved)
     ? "  None\n"
-    : treeify.asTree(summary.approved, true)
+    : treeify.asTree(summary.approved, true, true)
   let unApprovedTree = _.isEmpty(summary.unapproved)
     ? "  None\n"
-    : treeify.asTree(summary.unapproved, true)
+    : treeify.asTree(summary.unapproved, true, true)
   let unprocessedTree = _.isEmpty(summary.unprocessedLicenseEntries)
     ? "  None\n"
-    : treeify.asTree(summary.unprocessedLicenseEntries, true)
+    : treeify.asTree(summary.unprocessedLicenseEntries, true, true)
 
   let prettySummary = [
     `Licenses`,
@@ -223,78 +285,16 @@ module.exports.prettySummary = summary => {
   return prettySummary
 }
 
-/**
- * Get an object of total count of licenses
- *
- * Example return
- * {
- *   licenses: {
- *     'GPL-2.0': 23
- *   },
- *   unprocessedLicenseEntries: {
- *     'json-schema': ['BSD', 'AFLv2.1']
- *   }
- * }
- */
-module.exports.generateLicensesMap = async () => {
-  const opts = {
-    start: "./",
-    production: true,
-    summary: true
-  }
-  let dependencies = await init(opts)
-  let licenses = {}
-  let unprocessedLicenseEntries = {}
-  for (const name in dependencies) {
-    let dependency = dependencies[name]
-
-    // Should only handle licenses that follow the npm package.json recommendations
-    if (!this.canBeProcessed(dependency.licenses)) {
-      unprocessedLicenseEntries[name] = dependency.licenses
-      continue
-    }
-    if (licenses[dependency.licenses]) {
-      licenses[dependency.licenses]++
-    } else {
-      licenses[dependency.licenses] = 1
-    }
-  }
-  return {
-    licenses,
-    unprocessedLicenseEntries
-  }
-}
-
-// If it is not a string you have to specifically allow the module.
-module.exports.canBeProcessed = licenseEntry => {
-  return typeof licenseEntry === "string"
-}
-
-// Main method that initiates the checking process
-module.exports.getInvalidModuleDependencyTree = async config => {
-  const licenses = await this.getDependencies()
-  const invalidLicensedModules = this.getInvalidModules(licenses, config)
-  if (invalidLicensedModules === undefined) {
-    return
-  }
-  const packageDepTree = await this.getDepTree()
-  return this.pruneTreeByLicenses(
-    packageDepTree.name,
-    packageDepTree,
-    invalidLicensedModules
-  )
-}
-
 // Compares a modules map with configured valid licenses.
-module.exports.getInvalidModules = (moduleList, config) => {
+export function getInvalidModules(moduleList, config) {
   const invalidModules = {}
   for (let moduleName in moduleList) {
     let currentModule = moduleList[moduleName]
     let isLicenseValid = config.licenses
-      ? this.isLicenseValidByConfig(config.licenses, currentModule.licenses)
+      ? isLicenseValidByConfig(config.licenses, currentModule.licenses)
       : false
     let isModuleValid = config.modules
-      ? this.isModuleValidByConfig(config.modules, moduleName)
+      ? isModuleValidByConfig(config.modules, moduleName)
       : false
     if (!isLicenseValid && !isModuleValid) {
       invalidModules[moduleName] = currentModule
@@ -306,24 +306,22 @@ module.exports.getInvalidModules = (moduleList, config) => {
   return invalidModules
 }
 
-module.exports.isLicenseValidByConfig = (configLicenses, license) => {
-  return configLicenses.includes(license)
-}
-
-module.exports.isModuleValidByConfig = (configModules, moduleName) => {
-  return configModules.includes(moduleName)
-}
-
 // Prune out all the 'valid' licensed modules so that the result is
 // the tree of modules whose sub-dep licenses are invalid.
-module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
-  let prunedNode = {}
+export function pruneTreeByLicenses(name, node, invalidLicensedModules) {
+  let prunedNode: PrunedNode = {
+    licenses: null,
+    version: null
+  }
 
-  let prunedDeps = {}
+  let prunedDeps: PrunedNode = {
+    licenses: null,
+    version: null
+  }
   for (const key in node.dependencies) {
     // dependency is an object
     const dependency = node.dependencies[key]
-    const prunedSubTreeNode = this.pruneTreeByLicenses(
+    const prunedSubTreeNode = pruneTreeByLicenses(
       key,
       dependency,
       invalidLicensedModules
@@ -348,4 +346,19 @@ module.exports.pruneTreeByLicenses = (name, node, invalidLicensedModules) => {
   }
 
   return prunedNode
+}
+
+// Main method that initiates the checking process
+export async function getInvalidModuleDependencyTree(config) {
+  const licenses = await getDependencies()
+  const invalidLicensedModules = getInvalidModules(licenses, config)
+  if (invalidLicensedModules === undefined) {
+    return
+  }
+  const packageDepTree = (await getDepTree()) as any
+  return pruneTreeByLicenses(
+    packageDepTree.name,
+    packageDepTree,
+    invalidLicensedModules
+  )
 }
