@@ -27,11 +27,11 @@ const defaultLicenseInitOpts = {
 }
 
 // If it is not a string you have to specifically allow the module.
-export function canBeProcessed(licenseEntry) {
+export function canBeProcessed(licenseEntry): boolean {
   return typeof licenseEntry === "string"
 }
 
-export function isLicenseValidByConfig(configLicenses, license) {
+export function isLicenseValidByConfig(configLicenses, license): boolean {
   return configLicenses.includes(license)
 }
 
@@ -171,9 +171,7 @@ export async function getUserLicenseInput(existingLicenses) {
   for (let licenseName in licenseMap) {
     if (!existingLicenses.includes(licenseName)) {
       let answer = await inquirer.prompt({
-        message: `${
-          licenseMap[licenseName]
-        } dependencies use the ${licenseName} license. Would you like to allow this license?`,
+        message: `${licenseMap[licenseName]} dependencies use the ${licenseName} license. Would you like to allow this license?`,
         name: "answerKey",
         type: "list",
         choices: ["N", "Y", "Save and Quit"]
@@ -220,9 +218,7 @@ export async function getUserModulesInput(existingLicenses, existingModules) {
 
   for (let dependencyName in unallowedDependencyMap) {
     let answer = await inquirer.prompt({
-      message: `${dependencyName} module has an unapproved license (${
-        unallowedDependencyMap[dependencyName].licenses
-      }). Would you like to allow this module anyway?`,
+      message: `${dependencyName} module has an unapproved license (${unallowedDependencyMap[dependencyName].licenses}). Would you like to allow this module anyway?`,
       name: "answerKey",
       type: "list",
       choices: ["N", "Y", "Save and Quit"]
