@@ -8,14 +8,6 @@ describe("#loadConfig", () => {
   before(() => {
     checker = rewire("../src/checker.ts")
   })
-  it.only("should throw error if no config file found", async () => {
-    try {
-      await checker.loadConfig()
-      expect.fail()
-    } catch (error) {
-      expect(error.code).to.equal("ERR_INVALID_ARG_TYPE")
-    }
-  })
 
   it("should load and validate a config file", async () => {
     // Test an empty file.
