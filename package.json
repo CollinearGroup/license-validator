@@ -50,7 +50,7 @@
     "fs-extra": "^8.1.0",
     "inquirer": "^7.0.4",
     "js-yaml": "^3.13.1",
-    "license-checker": "^24.1.0",
+    "license-checker": "^25.0.1",
     "lodash": "^4.17.15",
     "treeify": "^1.1.0"
   },
