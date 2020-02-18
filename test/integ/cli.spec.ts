@@ -29,6 +29,8 @@ const invalidModuleConfig = [
   "  - BSD-3-Clause",
   "  - Apache-2.0",
   "  - CC-BY-3.0",
+  "  - (MIT OR CC0-1.0)",
+  "  - (MIT AND CC-BY-3.0)",
   "modules: []",
   ""
 ].join("\n")
@@ -129,13 +131,15 @@ describe("integration test: validates current repo is in a valid state", () => {
       `Licenses`,
       "",
       "APPROVED:",
-      "├─ ISC: 21",
+      "├─ ISC: 23",
       "├─ MIT: 58",
       "├─ BSD-2-Clause: 2",
       "├─ BSD-3-Clause: 2",
       "├─ Apache-2.0: 4",
-      "├─ CC-BY-3.0: 2",
-      "└─ CC0-1.0: 1",
+      "├─ CC-BY-3.0: 1",
+      "├─ CC0-1.0: 1",
+      "├─ (MIT AND CC-BY-3.0): 1",
+      "└─ (MIT OR CC0-1.0): 1",
       "",
       "UNAPPROVED:",
       "  None",
@@ -288,6 +292,8 @@ describe("integration tests: validates interactive mode", () => {
               "  - Apache-2.0",
               "  - CC-BY-3.0",
               "  - CC0-1.0",
+              "  - (MIT AND CC-BY-3.0)",
+              "  - (MIT OR CC0-1.0)",
               "modules: []",
               ""
             ].join("\n")
@@ -329,6 +335,8 @@ describe("integration tests: validates interactive mode", () => {
               "  - BSD-3-Clause",
               "  - Apache-2.0",
               "  - CC-BY-3.0",
+              "  - (MIT OR CC0-1.0)",
+              "  - (MIT AND CC-BY-3.0)",
               "modules:",
               "  - spdx-license-ids@3.0.3",
               ""
