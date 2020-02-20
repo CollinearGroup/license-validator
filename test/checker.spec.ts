@@ -4,10 +4,7 @@ const rewire = require("rewire")
 const { EventEmitter } = require("events")
 
 describe("#loadConfig", () => {
-  let checker
-  before(() => {
-    checker = rewire("../src/checker.ts")
-  })
+  const checker = rewire("../src/checker.ts")
 
   it("should load and validate a config file", async () => {
     // Test an empty file.
