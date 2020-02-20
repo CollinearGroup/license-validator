@@ -4,7 +4,7 @@ import * as _ from "lodash"
 import * as fs from "fs-extra"
 import * as treeify from "treeify"
 import program = require("commander")
-let pkg = fs.readJsonSync("./package.json")
+const pkg = fs.readJsonSync("./package.json")
 
 import {
   loadConfig,
@@ -28,10 +28,10 @@ program
 
 // Default Action
 async function action(args: program.Command): Promise<void> {
-  let fileName = ".approved-licenses.yml"
+  const fileName = ".approved-licenses.yml"
   if (args.summary) {
-    let summaryMap = await summary(fileName)
-    let prettySummaryMap = prettySummary(summaryMap)
+    const summaryMap = await summary(fileName)
+    const prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     if (_.isEmpty(summaryMap.approved)) {
       console.log(
@@ -73,8 +73,8 @@ async function action(args: program.Command): Promise<void> {
   const depTree = (await getInvalidModuleDependencyTree(parsedConfig)) as any
 
   if (!_.isEmpty(depTree)) {
-    let summaryMap = await summary(fileName)
-    let prettySummaryMap = prettySummary(summaryMap)
+    const summaryMap = await summary(fileName)
+    const prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     console.log(`UNAPPROVED MODULES:`)
     console.log(treeify.asTree(depTree, true, false))
