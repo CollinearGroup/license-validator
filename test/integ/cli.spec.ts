@@ -61,30 +61,30 @@ function no(cp) {
 
 function isAllowLicensePrompt(buffer) {
   return !!// caste to boolean
-  buffer
-    .toString("utf8")
-    .replace(/\n/g, "") // new lines cause problems
-    .match(/.*Would you like to allow this license\?.*\(Use arrow keys\)/m) // only works if initial prompt is unique
+    buffer
+      .toString("utf8")
+      .replace(/\n/g, "") // new lines cause problems
+      .match(/.*Would you like to allow this license\?.*\(Use arrow keys\)/m) // only works if initial prompt is unique
 }
 
 function isModifyModulesPrompt(buffer) {
   return !!// caste to boolean
-  buffer
-    .toString("utf8")
-    .replace(/\n/g, "") // new lines cause problems
-    .match(
-      /.*Would you like to modify your approved module list\?.*\(Use arrow keys\)/m
-    ) // only works if initial prompt is unique
+    buffer
+      .toString("utf8")
+      .replace(/\n/g, "") // new lines cause problems
+      .match(
+        /.*Would you like to modify your approved module list\?.*\(Use arrow keys\)/m
+      ) // only works if initial prompt is unique
 }
 
 function isAllowModulePrompt(buffer) {
   return !!// caste to boolean
-  buffer
-    .toString("utf8")
-    .replace(/\n/g, "") // new lines cause problems
-    .match(
-      /.*Would you like to allow this module anyway\?.*\(Use arrow keys\)/m
-    ) // only works if initial prompt is unique
+    buffer
+      .toString("utf8")
+      .replace(/\n/g, "") // new lines cause problems
+      .match(
+        /.*Would you like to allow this module anyway\?.*\(Use arrow keys\)/m
+      ) // only works if initial prompt is unique
 }
 
 // Allows the integration test to run on this repo's package.json and installed modules.
@@ -131,8 +131,8 @@ describe("integration test: validates current repo is in a valid state", () => {
       `Licenses`,
       "",
       "APPROVED:",
-      "├─ ISC: 23",
-      "├─ MIT: 58",
+      "├─ ISC: 24",
+      "├─ MIT: 60",
       "├─ BSD-2-Clause: 2",
       "├─ BSD-3-Clause: 2",
       "├─ Apache-2.0: 4",
