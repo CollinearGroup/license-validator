@@ -22,15 +22,38 @@ program
   .option("--summary", "Prints a summary report")
   .option("-i, --interactive", "Runs in interactive mode.")
   .option(
+    "--environment [environment]",
+    "Which dependencies to check. (production, development, all)",
+    "production"
+  )
+  .option(
     "-m, --modules-only",
     "Modifies module white list if in interactive mode."
   )
 
 // Default Action
 async function action(args: program.Command): Promise<void> {
+  let defaultLicenseInitOpts = {}
+
+  switch (args.environment) {
+    case "development":
+      defaultLicenseInitOpts = {
+        production: undefined,
+        development: true
+      }
+      break
+    case "all":
+      defaultLicenseInitOpts = {
+        production: undefined
+      }
+      break
+    default:
+      break
+  }
+
   const fileName = ".approved-licenses.yml"
   if (args.summary) {
-    const summaryMap = await summary(fileName)
+    const summaryMap = await summary(fileName, defaultLicenseInitOpts)
     const prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     if (_.isEmpty(summaryMap.approved)) {
@@ -44,11 +67,15 @@ async function action(args: program.Command): Promise<void> {
   if (args.interactive) {
     const yamlObj = await getAndValidateConfig(fileName)
     if (!args.modulesOnly) {
-      yamlObj.licenses = await getUserLicenseInput(yamlObj.licenses)
+      yamlObj.licenses = await getUserLicenseInput(
+        yamlObj.licenses,
+        defaultLicenseInitOpts
+      )
     }
     yamlObj.modules = await getUserModulesInput(
       yamlObj.licenses,
-      yamlObj.modules
+      yamlObj.modules,
+      defaultLicenseInitOpts
     )
     await writeConfig(fileName, yamlObj)
   }
@@ -70,10 +97,10 @@ async function action(args: program.Command): Promise<void> {
     process.exit(1)
   }
 
-  const depTree = (await getInvalidModuleDependencyTree(parsedConfig)) as any
+  const depTree = (await getInvalidModuleDependencyTree(parsedConfig, defaultLicenseInitOpts)) as any
 
   if (!_.isEmpty(depTree)) {
-    const summaryMap = await summary(fileName)
+    const summaryMap = await summary(fileName, defaultLicenseInitOpts)
     const prettySummaryMap = prettySummary(summaryMap)
     console.log(prettySummaryMap)
     console.log(`UNAPPROVED MODULES:`)

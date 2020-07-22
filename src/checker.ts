@@ -48,12 +48,13 @@ export function isLicenseValidByConfig(configLicenses, license): boolean {
  *   }
  * }
  */
-export async function generateLicensesMap() {
-  const opts = {
-    start: "./",
-    production: true,
+export async function generateLicensesMap(opts: any = {}) {
+  opts = {
+    ...defaultLicenseInitOpts,
+    ...opts,
     summary: true
   }
+
   const dependencies = await init(opts)
   const licenses = {}
   const unprocessedLicenseEntries = {}
@@ -165,8 +166,8 @@ export async function getDependencies(opts = {}) {
 }
 
 // Updates existing licenses based on user input and existing dependencies
-export async function getUserLicenseInput(existingLicenses) {
-  const { licenses: licenseMap } = await generateLicensesMap()
+export async function getUserLicenseInput(existingLicenses, licenseInitOpts) {
+  const { licenses: licenseMap } = await generateLicensesMap(licenseInitOpts)
   const approvedLicenses = [...existingLicenses]
   for (const licenseName in licenseMap) {
     if (!existingLicenses.includes(licenseName)) {
@@ -188,8 +189,9 @@ export async function getUserLicenseInput(existingLicenses) {
   return approvedLicenses
 }
 
-export async function getUserModulesInput(existingLicenses, existingModules) {
+export async function getUserModulesInput(existingLicenses, existingModules, licenseInitOpts) {
   const dependencies = await getDependencies({
+    ...licenseInitOpts,
     summary: true
   })
   const unallowedDependencyMap = await getUnallowedDependencies(
@@ -235,12 +237,12 @@ export async function getUserModulesInput(existingLicenses, existingModules) {
 }
 
 // Shows all the licenses in use for each module.
-export async function summary(filePath) {
+export async function summary(filePath, licenseInitOpts) {
   const currentConfig = await getAndValidateConfig(filePath)
   const {
     licenses: licenseMap,
     unprocessedLicenseEntries
-  } = await generateLicensesMap()
+  } = await generateLicensesMap(licenseInitOpts)
   const summary = {
     approved: {},
     unapproved: {},
@@ -345,8 +347,8 @@ export function pruneTreeByLicenses(name, node, invalidLicensedModules) {
 }
 
 // Main method that initiates the checking process
-export async function getInvalidModuleDependencyTree(config) {
-  const licenses = await getDependencies()
+export async function getInvalidModuleDependencyTree(config, licenseInitOpts) {
+  const licenses = await getDependencies(licenseInitOpts)
   const invalidLicensedModules = getInvalidModules(licenses, config)
   if (invalidLicensedModules === undefined) {
     return
