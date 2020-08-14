@@ -23,7 +23,7 @@ program
   .option("-i, --interactive", "Runs in interactive mode.")
   .option(
     "--environment [environment]",
-    "Which dependencies to check. (production, development, all)",
+    "Which dependencies to check. (production, all)",
     "production"
   )
   .option(
@@ -36,12 +36,6 @@ async function action(args: program.Command): Promise<void> {
   let defaultLicenseInitOpts = {}
 
   switch (args.environment) {
-    case "development":
-      defaultLicenseInitOpts = {
-        production: undefined,
-        development: true
-      }
-      break
     case "all":
       defaultLicenseInitOpts = {
         production: undefined
