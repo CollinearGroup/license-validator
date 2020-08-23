@@ -60,31 +60,37 @@ function no(cp) {
 }
 
 function isAllowLicensePrompt(buffer) {
-  return !!// caste to boolean
+  return !!(
+    // caste to boolean
     buffer
       .toString("utf8")
       .replace(/\n/g, "") // new lines cause problems
-      .match(/.*Would you like to allow this license\?.*\(Use arrow keys\)/m) // only works if initial prompt is unique
+      .match(/.*Would you like to allow this license\?.*\(Use arrow keys\)/m)
+  ) // only works if initial prompt is unique
 }
 
 function isModifyModulesPrompt(buffer) {
-  return !!// caste to boolean
+  return !!(
+    // caste to boolean
     buffer
       .toString("utf8")
       .replace(/\n/g, "") // new lines cause problems
       .match(
         /.*Would you like to modify your approved module list\?.*\(Use arrow keys\)/m
-      ) // only works if initial prompt is unique
+      )
+  ) // only works if initial prompt is unique
 }
 
 function isAllowModulePrompt(buffer) {
-  return !!// caste to boolean
+  return !!(
+    // caste to boolean
     buffer
       .toString("utf8")
       .replace(/\n/g, "") // new lines cause problems
       .match(
         /.*Would you like to allow this module anyway\?.*\(Use arrow keys\)/m
-      ) // only works if initial prompt is unique
+      )
+  ) // only works if initial prompt is unique
 }
 
 // Allows the integration test to run on this repo's package.json and installed modules.
@@ -126,13 +132,52 @@ describe("integration test: validates current repo is in a valid state", () => {
     expect(stdout.toString("utf-8")).to.equal(expectedResult)
   }).timeout(20000)
 
+  it("should support fetching all licenses", async () => {
+    const expectedResult = [
+      `Licenses`,
+      "",
+      "APPROVED:",
+      "├─ MIT: 482",
+      "├─ ISC: 81",
+      "├─ BSD-2-Clause: 14",
+      "├─ Apache-2.0: 18",
+      "├─ BSD-3-Clause: 20",
+      "├─ CC-BY-3.0: 1",
+      "├─ CC0-1.0: 1",
+      "├─ (MIT AND CC-BY-3.0): 1",
+      "└─ (MIT OR CC0-1.0): 1",
+      "",
+      "UNAPPROVED:",
+      "├─ (MIT OR Apache-2.0): 1",
+      "├─ BSD: 1",
+      "├─ BSD*: 1",
+      "├─ MIT*: 1",
+      "├─ (WTFPL OR MIT): 1",
+      "├─ Apache License, Version 2.0: 2",
+      "└─ Unlicense: 1",
+      "",
+      "UNPROCESSED:",
+      "└─ json-schema@0.2.3",
+      "   ├─ 0: AFLv2.1",
+      "   └─ 1: BSD",
+      "",
+      ""
+    ].join("\n")
+    let { stdout } = spawnSync(
+      "ts-node",
+      ["./src/index.ts", "--summary", "--environment=all"],
+      {}
+    )
+    expect(stdout.toString("utf8")).to.equal(expectedResult)
+  }).timeout(20000)
+
   it("should print summary", async () => {
     const expectedResult = [
       `Licenses`,
       "",
       "APPROVED:",
       "├─ ISC: 24",
-      "├─ MIT: 60",
+      "├─ MIT: 59",
       "├─ BSD-2-Clause: 2",
       "├─ BSD-3-Clause: 2",
       "├─ Apache-2.0: 4",
